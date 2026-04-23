@@ -607,6 +607,8 @@ Deno.serve(async (req) => {
       guideline_references: parsed.guideline_references ?? analysisRow.guideline_references,
       executive_summary: parsed.executive_summary ?? null,
       score_rationales: parsed.score_rationales ?? null,
+      score_evidence: parsed.score_evidence ?? null,
+      suppressed_red_flags: parsed.suppressed_red_flags ?? [],
       issues: parsed.issues ?? analysisRow.issues,
     };
 
