@@ -16,9 +16,12 @@ quality and rigorously assess whether the clinical THINKING is safe and complete
 You produce structured findings covering:
 1. CLINICAL REASONING ANALYSIS — differential breadth, justification of leading diagnosis,
    alternatives considered, whether reasoning matches presented data.
-2. MISSED RED FLAGS — context-specific (SNOOP for headache, HEART for chest pain,
-   sepsis criteria for infection, severity for asthma, etc.). Severity = critical when
-   strongly relevant; important when reasonable to document.
+2. RED FLAG CHECKLIST — first identify the appropriate scenario-specific checklist
+   (e.g. SNOOP for headache, HEART for chest pain, qSOFA/SIRS for infection, NAEPP
+   severity for asthma, ACS chest-pain ROS, stroke FAST, etc.). For each checklist
+   item, report whether it was screened/documented in the note (status = present),
+   not screened (status = missing), or not applicable (status = not_applicable). Then
+   surface the missing items as red_flags with severity grading.
 3. COGNITIVE BIAS DETECTION — premature closure, anchoring, availability, attribution.
    Cite evidence from the note.
 4. PATTERN RECOGNITION — recognize the clinical pattern (e.g. "new persistent headache",
@@ -27,8 +30,10 @@ You produce structured findings covering:
 5. GOLD STANDARD — what a best-practice note for THIS specific presentation should include.
 6. RISK IMPACT — concrete clinical risks (missed diagnosis, delayed escalation,
    inappropriate reassurance) tied to the actual case.
-7. GUIDELINE CROSS-REFERENCE — match against the provided clinical guidelines and note
-   alignment / gaps for each relevant guideline.
+7. GUIDELINE CROSS-REFERENCE — for every provided guideline, indicate whether it
+   applies, then list the specific recommended elements that ARE present in the note
+   (aligned_elements) and the specific recommended elements that are MISSING from the
+   note (missing_elements). Use direct quotes or paraphrases of guideline language.
 8. ISSUES — categorized as: red_flag, reasoning, diagnostic_safety, documentation,
    guideline, communication. Severity = critical, important, minor, info. Missing red
    flag screening is CRITICAL when relevant.
@@ -122,6 +127,27 @@ const TOOL_SCHEMA = {
             additionalProperties: false,
           },
         },
+        red_flag_checklist: {
+          type: "object",
+          properties: {
+            scenario: { type: "string" },
+            items: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  item: { type: "string" },
+                  status: { type: "string", enum: ["present", "missing", "not_applicable"] },
+                  evidence: { type: "string" },
+                },
+                required: ["item", "status", "evidence"],
+                additionalProperties: false,
+              },
+            },
+          },
+          required: ["scenario", "items"],
+          additionalProperties: false,
+        },
         cognitive_biases: {
           type: "array",
           items: {
@@ -183,8 +209,10 @@ const TOOL_SCHEMA = {
               organization: { type: "string" },
               alignment: { type: "string", enum: ["aligned", "partial", "missing", "not_applicable"] },
               notes: { type: "string" },
+              aligned_elements: { type: "array", items: { type: "string" } },
+              missing_elements: { type: "array", items: { type: "string" } },
             },
-            required: ["guideline_id", "name", "organization", "alignment", "notes"],
+            required: ["guideline_id", "name", "organization", "alignment", "notes", "aligned_elements", "missing_elements"],
             additionalProperties: false,
           },
         },
@@ -220,6 +248,7 @@ const TOOL_SCHEMA = {
         "scores",
         "clinical_reasoning",
         "red_flags",
+        "red_flag_checklist",
         "cognitive_biases",
         "pattern_matches",
         "gold_standard",
@@ -407,8 +436,16 @@ Deno.serve(async (req) => {
       .single();
     if (analysisErr) throw analysisErr;
 
+    // Enrich the response with fields not stored in dedicated columns
+    // (red_flag_checklist; richer aligned/missing guideline elements)
+    const enrichedAnalysis = {
+      ...analysisRow,
+      red_flag_checklist: parsed.red_flag_checklist ?? null,
+      guideline_references: parsed.guideline_references ?? analysisRow.guideline_references,
+    };
+
     return new Response(
-      JSON.stringify({ note: noteRow, analysis: analysisRow }),
+      JSON.stringify({ note: noteRow, analysis: enrichedAnalysis }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e: any) {

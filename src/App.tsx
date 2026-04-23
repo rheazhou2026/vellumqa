@@ -13,6 +13,7 @@ import Bulk from "./pages/app/Bulk";
 import Guidelines from "./pages/app/Guidelines";
 import Analytics from "./pages/app/Analytics";
 import Sources from "./pages/app/Sources";
+import Diagnostics from "./pages/app/Diagnostics";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="guidelines" element={<Guidelines />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="sources" element={<Sources />} />
+            <Route path="diagnostics" element={<Diagnostics />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
