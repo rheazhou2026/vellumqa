@@ -436,8 +436,16 @@ Deno.serve(async (req) => {
       .single();
     if (analysisErr) throw analysisErr;
 
+    // Enrich the response with fields not stored in dedicated columns
+    // (red_flag_checklist; richer aligned/missing guideline elements)
+    const enrichedAnalysis = {
+      ...analysisRow,
+      red_flag_checklist: parsed.red_flag_checklist ?? null,
+      guideline_references: parsed.guideline_references ?? analysisRow.guideline_references,
+    };
+
     return new Response(
-      JSON.stringify({ note: noteRow, analysis: analysisRow }),
+      JSON.stringify({ note: noteRow, analysis: enrichedAnalysis }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e: any) {
