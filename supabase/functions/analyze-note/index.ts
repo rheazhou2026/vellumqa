@@ -169,6 +169,61 @@ const TOOL_SCHEMA = {
           required: ["safety", "completeness", "accuracy", "reasoning", "overall_trust"],
           additionalProperties: false,
         },
+        score_evidence: {
+          type: "object",
+          properties: {
+            safety: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  quote: { type: "string" },
+                  reason: { type: "string" },
+                },
+                required: ["quote", "reason"],
+                additionalProperties: false,
+              },
+            },
+            reasoning: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  quote: { type: "string" },
+                  reason: { type: "string" },
+                },
+                required: ["quote", "reason"],
+                additionalProperties: false,
+              },
+            },
+            overall_trust: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  quote: { type: "string" },
+                  reason: { type: "string" },
+                },
+                required: ["quote", "reason"],
+                additionalProperties: false,
+              },
+            },
+          },
+          required: ["safety", "reasoning", "overall_trust"],
+          additionalProperties: false,
+        },
+        suppressed_red_flags: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              label: { type: "string" },
+              reason: { type: "string" },
+            },
+            required: ["label", "reason"],
+            additionalProperties: false,
+          },
+        },
         executive_summary: {
           type: "object",
           properties: {
