@@ -18,6 +18,8 @@ import { IssueCard } from "@/components/clinical/IssueCard";
 import { SeverityBadge } from "@/components/clinical/SeverityBadge";
 import { RedFlagChecklist } from "@/components/clinical/RedFlagChecklist";
 import { GuidelineMatchPanel } from "@/components/clinical/GuidelineMatchPanel";
+import { ScoreEvidencePopover } from "@/components/clinical/ScoreEvidencePopover";
+import { SuppressedFlagsPanel } from "@/components/clinical/SuppressedFlagsPanel";
 import { exportAuditAsCSV, exportAuditAsPDF } from "@/lib/export-report";
 import { toast } from "sonner";
 import {
