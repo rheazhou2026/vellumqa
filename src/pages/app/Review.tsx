@@ -116,7 +116,7 @@ export default function Review() {
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <div className="text-[11px] uppercase tracking-[0.18em] text-accent">Trust scores</div>
-                <h2 className="mt-1 font-display text-xl font-semibold">Calibrated 0–100</h2>
+                <h2 className="mt-1 font-display text-xl font-semibold">Calibrated 0 to 100</h2>
               </div>
               <Button variant="outline" size="sm" onClick={() => setAnalysis(null)}>New review</Button>
             </div>

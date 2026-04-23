@@ -89,7 +89,7 @@ export default function Auth() {
         </Link>
         <div className="relative">
           <p className="font-display text-3xl leading-tight">
-            "A QA layer that reads notes the way a senior physician would —
+            "A QA layer that reads notes the way a senior physician would,
             looking past the prose for what the clinician didn't think about."
           </p>
           <div className="mt-6 text-xs uppercase tracking-[0.18em] opacity-70">
