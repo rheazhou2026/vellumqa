@@ -352,7 +352,7 @@ Deno.serve(async (req) => {
     }
     const user = userData.user;
 
-    const { batchId } = await req.json();
+    const { batchId, mode, itemId } = await req.json();
     if (!batchId) {
       return new Response(JSON.stringify({ error: "batchId required" }), {
         status: 400,
@@ -370,11 +370,30 @@ Deno.serve(async (req) => {
 
     await supabase.from("batch_jobs").update({ status: "processing" }).eq("id", batchId);
 
-    const { data: items } = await supabase
+    // Decide which items to (re)process based on mode.
+    // mode = "all"          -> process queued + error items
+    // mode = "retry-failed" -> only error items (and reset them)
+    // mode = "retry-item"   -> a single specific item by itemId
+    let itemsQuery = supabase
       .from("batch_job_items")
       .select("*")
-      .eq("batch_id", batchId)
-      .order("position", { ascending: true });
+      .eq("batch_id", batchId);
+    if (mode === "retry-item" && itemId) {
+      itemsQuery = itemsQuery.eq("id", itemId);
+    } else if (mode === "retry-failed") {
+      itemsQuery = itemsQuery.eq("status", "error");
+    } else {
+      itemsQuery = itemsQuery.in("status", ["queued", "processing", "error"]);
+    }
+    const { data: items } = await itemsQuery.order("position", { ascending: true });
+
+    // For retried items, clear the previous error before re-processing.
+    if (items && items.length > 0 && (mode === "retry-failed" || mode === "retry-item")) {
+      await supabase
+        .from("batch_job_items")
+        .update({ status: "queued", error: null })
+        .in("id", items.map((i: any) => i.id));
+    }
 
     const { data: guidelines } = await supabase
       .from("clinical_guidelines")
