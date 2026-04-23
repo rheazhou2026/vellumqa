@@ -495,18 +495,31 @@ Deno.serve(async (req) => {
 
     const summary = aggregate(allAnalyses ?? analyses);
 
+    // Recompute totals from DB so retries don't break the counters.
+    const { data: allItems } = await supabase
+      .from("batch_job_items")
+      .select("status")
+      .eq("batch_id", batchId);
+    const totalDone = (allItems ?? []).filter((i: any) => i.status === "done").length;
+    const totalErr = (allItems ?? []).filter((i: any) => i.status === "error").length;
+    const totalAll = (allItems ?? []).length;
+    const finalStatus =
+      totalErr === totalAll ? "failed" :
+      totalDone === totalAll ? "completed" :
+      totalErr > 0 ? "completed" : "completed";
+
     await supabase
       .from("batch_jobs")
       .update({
-        status: failed > 0 && processed === 0 ? "failed" : "completed",
-        processed_items: processed,
-        failed_items: failed,
+        status: finalStatus,
+        processed_items: totalDone,
+        failed_items: totalErr,
         aggregate_summary: summary,
         completed_at: new Date().toISOString(),
       })
       .eq("id", batchId);
 
-    return new Response(JSON.stringify({ ok: true, processed, failed, summary }), {
+    return new Response(JSON.stringify({ ok: true, processed, failed, summary, totalDone, totalErr }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e: any) {
