@@ -43,7 +43,10 @@ export default function Auth() {
           options: { emailRedirectTo: `${window.location.origin}/app` },
         });
         if (error) throw error;
-        toast.success("Account created. You're signed in.");
+        toast.success("Account created. Check your email to verify your address before signing in.", { duration: 8000 });
+        setMode("signin");
+        setPassword("");
+        return;
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: parsed.data.email,
@@ -51,8 +54,8 @@ export default function Auth() {
         });
         if (error) throw error;
         toast.success("Welcome back.");
+        navigate("/app", { replace: true });
       }
-      navigate("/app", { replace: true });
     } catch (e: any) {
       toast.error(e?.message ?? "Authentication failed");
     } finally {
