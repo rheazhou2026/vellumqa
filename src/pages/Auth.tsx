@@ -113,6 +113,12 @@ export default function Auth() {
               : "Continue your clinical QA work."}
           </p>
 
+          {mode === "signup" && (
+            <div className="mt-4 rounded-md border border-border bg-surface-muted/60 p-3 text-xs text-muted-foreground">
+              After you create your account, we'll send a verification link to your email. Confirm it before signing in.
+            </div>
+          )}
+
           <form onSubmit={onSubmit} className="mt-8 space-y-4">
             <div>
               <Label htmlFor="email">Email</Label>
