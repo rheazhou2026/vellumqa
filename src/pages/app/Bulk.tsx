@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { SectionCard } from "@/components/clinical/SectionCard";
 import { toast } from "sonner";
-import { Layers, Upload, Loader2 } from "lucide-react";
+import { Layers, Upload, Loader2, RefreshCw, AlertCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 type Item = { patient_label?: string | null; note_text: string };
@@ -55,6 +55,8 @@ export default function Bulk() {
   const [items, setItems] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [retryingItem, setRetryingItem] = useState<string | null>(null);
+  const [retryingFailed, setRetryingFailed] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const refresh = async () => {
@@ -105,24 +107,57 @@ export default function Bulk() {
     finally { setUploading(false); if (fileRef.current) fileRef.current.value = ""; }
   };
 
+  const reloadBatch = async (id: string) => {
+    const { data: b } = await supabase.from("batch_jobs").select("*").eq("id", id).maybeSingle();
+    setActiveBatch(b);
+    const { data: it } = await supabase.from("batch_job_items").select("*").eq("batch_id", id).order("position");
+    setItems(it ?? []);
+  };
+
+  const invokeBatch = async (body: any) => {
+    const { data, error } = await supabase.functions.invoke("process-batch", { body });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    return data;
+  };
+
   const runBatch = async () => {
     if (!activeBatch) return;
     setProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke("process-batch", { body: { batchId: activeBatch.id } });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      const data = await invokeBatch({ batchId: activeBatch.id });
       toast.success(`Processed ${data.processed} notes (${data.failed} failed)`);
       await refresh();
-      const { data: b } = await supabase.from("batch_jobs").select("*").eq("id", activeBatch.id).maybeSingle();
-      setActiveBatch(b);
-      const { data: it } = await supabase.from("batch_job_items").select("*").eq("batch_id", activeBatch.id).order("position");
-      setItems(it ?? []);
+      await reloadBatch(activeBatch.id);
     } catch (e: any) { toast.error(e?.message ?? "Processing failed"); }
     finally { setProcessing(false); }
   };
 
+  const retryFailed = async () => {
+    if (!activeBatch) return;
+    setRetryingFailed(true);
+    try {
+      const data = await invokeBatch({ batchId: activeBatch.id, mode: "retry-failed" });
+      toast.success(`Retried failed items: ${data.processed} succeeded, ${data.failed} still failing`);
+      await refresh();
+      await reloadBatch(activeBatch.id);
+    } catch (e: any) { toast.error(e?.message ?? "Retry failed"); }
+    finally { setRetryingFailed(false); }
+  };
+
+  const retryItem = async (itemId: string) => {
+    if (!activeBatch) return;
+    setRetryingItem(itemId);
+    try {
+      await invokeBatch({ batchId: activeBatch.id, mode: "retry-item", itemId });
+      toast.success("Item retried");
+      await reloadBatch(activeBatch.id);
+    } catch (e: any) { toast.error(e?.message ?? "Retry failed"); }
+    finally { setRetryingItem(null); }
+  };
+
   const summary = activeBatch?.aggregate_summary;
+  const failedCount = items.filter((i) => i.status === "error").length;
 
   return (
     <div className="space-y-8">
