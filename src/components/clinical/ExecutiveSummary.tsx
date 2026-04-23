@@ -1,6 +1,7 @@
 import { Sparkles, ChevronDown, ChevronUp, ShieldAlert, AlertOctagon, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScoreGauge } from "./ScoreGauge";
+import { ScoreEvidencePopover } from "./ScoreEvidencePopover";
 
 interface Props {
   analysis: any;
@@ -18,6 +19,8 @@ export function ExecutiveSummary({ analysis, expanded, onToggle }: Props) {
   const oneLiner = exec.one_liner ?? "";
   const rating = analysis.reasoning_rating ?? "—";
   const trust = Number(analysis.overall_trust_score ?? 0);
+  const trustRationale = analysis.score_rationales?.overall_trust;
+  const trustEvidence = analysis.score_evidence?.overall_trust;
 
   const ratingColor =
     rating === "Strong" ? "text-safe" :
@@ -27,7 +30,13 @@ export function ExecutiveSummary({ analysis, expanded, onToggle }: Props) {
     <section className="paper-card overflow-hidden p-0">
       <div className="grid gap-0 lg:grid-cols-[auto_1fr_auto] lg:items-stretch">
         <div className="flex flex-col items-center justify-center gap-2 border-b border-border bg-surface-muted/40 p-6 lg:border-b-0 lg:border-r">
-          <ScoreGauge label="Trust" score={trust} size={112} />
+          <ScoreEvidencePopover
+            label="Trust"
+            score={trust}
+            size={112}
+            rationale={trustRationale}
+            evidence={trustEvidence}
+          />
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Overall</div>
         </div>
 
