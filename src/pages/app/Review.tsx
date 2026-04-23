@@ -242,19 +242,35 @@ export default function Review() {
                 <div className="grid gap-6 sm:grid-cols-4">
                   {scoreRows.map((s) => (
                     <div key={s.key} className="flex flex-col items-center gap-2 text-center">
-                      <ScoreGauge label={s.label} score={Number(s.value)} />
-                      {rationales[s.key] && (
+                      {evidenceKeys.has(s.key) ? (
+                        <ScoreEvidencePopover
+                          label={s.label}
+                          score={Number(s.value)}
+                          rationale={rationales[s.key]}
+                          evidence={evidence[s.key]}
+                        />
+                      ) : (
+                        <ScoreGauge label={s.label} score={Number(s.value)} />
+                      )}
+                      {rationales[s.key] && !evidenceKeys.has(s.key) && (
                         <p className="text-xs leading-snug text-muted-foreground">{rationales[s.key]}</p>
                       )}
                     </div>
                   ))}
                 </div>
-                {rationales.overall_trust && (
-                  <div className="mt-5 flex items-start gap-2 rounded-md border border-border bg-surface-muted/40 p-3">
-                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                    <div>
-                      <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Overall trust rationale</div>
-                      <p className="mt-0.5 text-sm">{rationales.overall_trust}</p>
+                {(rationales.overall_trust || (evidence.overall_trust?.length ?? 0) > 0) && (
+                  <div className="mt-5 rounded-md border border-border bg-surface-muted/40 p-3">
+                    <div className="flex items-start gap-2">
+                      <Info className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Overall trust rationale</div>
+                          <span className="text-[10px] uppercase tracking-widest text-accent/80">
+                            Click any of Safety, Reasoning, or Overall to see source quotes
+                          </span>
+                        </div>
+                        {rationales.overall_trust && <p className="mt-0.5 text-sm">{rationales.overall_trust}</p>}
+                      </div>
                     </div>
                   </div>
                 )}
