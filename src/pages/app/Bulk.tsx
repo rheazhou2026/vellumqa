@@ -192,11 +192,20 @@ export default function Bulk() {
           title={activeBatch.label ?? "Batch"}
           eyebrow={`Status: ${activeBatch.status}`}
           action={
-            activeBatch.status !== "completed" && (
-              <Button onClick={runBatch} disabled={processing} className="gap-2 bg-gradient-ink text-primary-foreground hover:opacity-90">
-                {processing ? <><Loader2 className="h-4 w-4 animate-spin" /> Processing…</> : <>Run queue</>}
-              </Button>
-            )
+            <div className="flex flex-wrap gap-2">
+              {failedCount > 0 && (
+                <Button onClick={retryFailed} disabled={retryingFailed || processing} variant="outline" className="gap-2">
+                  {retryingFailed
+                    ? <><Loader2 className="h-4 w-4 animate-spin" /> Retrying...</>
+                    : <><RefreshCw className="h-4 w-4" /> Retry {failedCount} failed</>}
+                </Button>
+              )}
+              {activeBatch.status !== "completed" && (
+                <Button onClick={runBatch} disabled={processing || retryingFailed} className="gap-2 bg-gradient-ink text-primary-foreground hover:opacity-90">
+                  {processing ? <><Loader2 className="h-4 w-4 animate-spin" /> Processing...</> : <>Run queue</>}
+                </Button>
+              )}
+            </div>
           }
         >
           <div className="mb-4 grid grid-cols-3 gap-3 text-center">
@@ -239,15 +248,53 @@ export default function Bulk() {
           <div className="mt-4 max-h-80 overflow-y-auto rounded-md border border-border">
             <table className="w-full text-sm">
               <thead className="bg-surface-muted text-left text-[11px] uppercase tracking-widest text-muted-foreground">
-                <tr><th className="px-3 py-2">#</th><th className="px-3 py-2">Patient</th><th className="px-3 py-2">Status</th><th className="px-3 py-2">Note preview</th></tr>
+                <tr>
+                  <th className="px-3 py-2">#</th>
+                  <th className="px-3 py-2">Patient</th>
+                  <th className="px-3 py-2">Status</th>
+                  <th className="px-3 py-2">Note preview</th>
+                  <th className="px-3 py-2 text-right">Actions</th>
+                </tr>
               </thead>
               <tbody>
                 {items.map((it) => (
                   <tr key={it.id} className="border-t border-border">
                     <td className="px-3 py-2 font-mono text-xs">{it.position + 1}</td>
                     <td className="px-3 py-2">{it.patient_label ?? "-"}</td>
-                    <td className="px-3 py-2">{it.status}</td>
+                    <td className="px-3 py-2">
+                      {it.status === "error" ? (
+                        <span className="inline-flex items-center gap-1 text-critical">
+                          <AlertCircle className="h-3 w-3" /> error
+                        </span>
+                      ) : it.status === "done" ? (
+                        <span className="text-safe">done</span>
+                      ) : (
+                        <span className="text-muted-foreground">{it.status}</span>
+                      )}
+                      {it.status === "error" && it.error && (
+                        <div className="mt-0.5 max-w-[180px] truncate text-[10px] text-muted-foreground" title={it.error}>{it.error}</div>
+                      )}
+                    </td>
                     <td className="px-3 py-2 max-w-md truncate text-muted-foreground">{it.note_text}</td>
+                    <td className="px-3 py-2 text-right">
+                      {it.status === "error" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 gap-1 px-2 text-xs"
+                          onClick={() => retryItem(it.id)}
+                          disabled={retryingItem === it.id || processing || retryingFailed}
+                        >
+                          {retryingItem === it.id
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : <RefreshCw className="h-3 w-3" />}
+                          Retry
+                        </Button>
+                      )}
+                      {it.status === "done" && it.analysis_id && (
+                        <a href={`/app/review/${it.analysis_id}`} className="text-xs text-accent">Open →</a>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
