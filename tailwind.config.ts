@@ -19,6 +19,10 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        surface: {
+          DEFAULT: "hsl(var(--surface))",
+          muted: "hsl(var(--surface-muted))",
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -39,6 +43,25 @@ export default {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
+        critical: {
+          DEFAULT: "hsl(var(--critical))",
+          foreground: "hsl(var(--critical-foreground))",
+          soft: "hsl(var(--critical-soft))",
+        },
+        important: {
+          DEFAULT: "hsl(var(--important))",
+          foreground: "hsl(var(--important-foreground))",
+          soft: "hsl(var(--important-soft))",
+        },
+        safe: {
+          DEFAULT: "hsl(var(--safe))",
+          foreground: "hsl(var(--safe-foreground))",
+          soft: "hsl(var(--safe-soft))",
+        },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          soft: "hsl(var(--info-soft))",
+        },
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
@@ -57,6 +80,22 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+      },
+      fontFamily: {
+        display: ['Fraunces', 'Georgia', 'serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+      },
+      backgroundImage: {
+        'gradient-paper': 'var(--gradient-paper)',
+        'gradient-ink': 'var(--gradient-ink)',
+        'gradient-risk': 'var(--gradient-risk)',
+        'gradient-safe': 'var(--gradient-safe)',
+      },
+      boxShadow: {
+        paper: 'var(--shadow-paper)',
+        elevated: 'var(--shadow-elevated)',
+        'glow-risk': 'var(--shadow-glow-risk)',
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -80,10 +119,20 @@ export default {
             height: "0",
           },
         },
+        "fade-up": {
+          "0%": { opacity: "0", transform: "translateY(8px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "pulse-soft": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.6" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-up": "fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1)",
+        "pulse-soft": "pulse-soft 2s ease-in-out infinite",
       },
     },
   },

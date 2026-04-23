@@ -1,0 +1,7 @@
+project_id = "xzpwdvxkluavegayhrxi"
+
+[functions.analyze-note]
+verify_jwt = true
+
+[functions.process-batch]
+verify_jwt = true
