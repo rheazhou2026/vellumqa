@@ -8,6 +8,7 @@ import {
   Activity,
   Cpu,
   LogOut,
+  Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ const nav = [
   { to: "/app/guidelines", label: "Guidelines Library", icon: BookMarked },
   { to: "/app/analytics", label: "AI Performance", icon: Activity },
   { to: "/app/sources", label: "AI Sources", icon: Cpu },
+  { to: "/app/diagnostics", label: "Diagnostics", icon: Wrench },
 ];
 
 export function AppShell() {
