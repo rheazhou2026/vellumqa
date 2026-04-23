@@ -28,15 +28,21 @@ export function exportAuditAsCSV(analysis: any, patientLabel?: string) {
   }
   push("");
   push("Issues");
-  push("Category", "Severity", "Description", "Suggested fix");
+  push("Category", "Severity", "Description", "Suggested fix", "Next best step", "Root cause");
   for (const i of analysis.issues ?? []) {
-    push(i.category, i.severity, i.description, i.suggested_fix);
+    push(i.category, i.severity, i.description, i.suggested_fix, i.next_best_step ?? "", i.root_cause ?? "");
   }
   push("");
   push("Guideline references");
-  push("Name", "Organization", "Alignment", "Notes");
+  push("Name", "Organization", "Alignment", "Notes", "Aligned elements (with evidence)", "Missing elements (with evidence)");
   for (const g of analysis.guideline_references ?? []) {
-    push(g.name, g.organization, g.alignment, g.notes);
+    const aligned = (g.aligned_elements ?? []).map((x: any) =>
+      typeof x === "string" ? x : `${x.element}${x.note_evidence ? ` — note: "${x.note_evidence}"` : ""}`,
+    ).join(" | ");
+    const missing = (g.missing_elements ?? []).map((x: any) =>
+      typeof x === "string" ? x : `${x.element}${x.guideline_evidence ? ` — guideline: "${x.guideline_evidence}"` : ""}`,
+    ).join(" | ");
+    push(g.name, g.organization, g.alignment, g.notes, aligned, missing);
   }
 
   const csv = rows.map((r) => r.join(",")).join("\n");
@@ -107,7 +113,9 @@ export function exportAuditAsPDF(analysis: any, patientLabel?: string) {
     for (const i of analysis.issues) {
       subheading(`[${i.severity?.toUpperCase()}] ${i.category}`);
       text(i.description);
+      if (i.next_best_step) text(`Next best step: ${i.next_best_step}`, { color: [40, 70, 130] });
       if (i.suggested_fix) text(`Fix: ${i.suggested_fix}`, { color: [80, 80, 80] });
+      if (i.root_cause) text(`Root cause: ${i.root_cause}`, { color: [110, 110, 110] });
     }
   }
 
@@ -116,8 +124,26 @@ export function exportAuditAsPDF(analysis: any, patientLabel?: string) {
     for (const g of analysis.guideline_references) {
       subheading(`${g.name} — ${g.organization} (${g.alignment})`);
       if (g.notes) text(g.notes, { color: [80, 80, 80] });
-      if (g.aligned_elements?.length) text(`Aligned: ${g.aligned_elements.join("; ")}`, { color: [40, 110, 70] });
-      if (g.missing_elements?.length) text(`Missing: ${g.missing_elements.join("; ")}`, { color: [160, 50, 50] });
+      if (g.aligned_elements?.length) {
+        text("Aligned elements:", { color: [40, 110, 70], bold: true });
+        for (const x of g.aligned_elements) {
+          if (typeof x === "string") text(`  ✓ ${x}`, { color: [40, 110, 70] });
+          else {
+            text(`  ✓ ${x.element}`, { color: [40, 110, 70] });
+            if (x.note_evidence) text(`     From note: "${x.note_evidence}"`, { color: [110, 110, 110] });
+          }
+        }
+      }
+      if (g.missing_elements?.length) {
+        text("Missing elements:", { color: [160, 50, 50], bold: true });
+        for (const x of g.missing_elements) {
+          if (typeof x === "string") text(`  ✗ ${x}`, { color: [160, 50, 50] });
+          else {
+            text(`  ✗ ${x.element}`, { color: [160, 50, 50] });
+            if (x.guideline_evidence) text(`     Guideline expects: "${x.guideline_evidence}"`, { color: [110, 110, 110] });
+          }
+        }
+      }
     }
   }
 
