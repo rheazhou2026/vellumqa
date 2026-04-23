@@ -172,7 +172,15 @@ export default function Review() {
                 <div className="text-[11px] uppercase tracking-[0.18em] text-accent">Trust scores</div>
                 <h2 className="mt-1 font-display text-xl font-semibold">Calibrated 0 to 100</h2>
               </div>
-              <Button variant="outline" size="sm" onClick={() => setAnalysis(null)}>New review</Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportAuditAsPDF(analysis, patientLabel)}>
+                  <FileText className="h-3.5 w-3.5" /> Export PDF
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => exportAuditAsCSV(analysis, patientLabel)}>
+                  <FileDown className="h-3.5 w-3.5" /> Export CSV
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setAnalysis(null)}>New review</Button>
+              </div>
             </div>
             <div className="ink-rule mb-6" />
             <div className="grid grid-cols-2 gap-6 sm:grid-cols-5">
@@ -224,6 +232,15 @@ export default function Review() {
               </div>
             )}
           </SectionCard>
+
+          {analysis.red_flag_checklist?.items?.length > 0 && (
+            <SectionCard icon={ListChecks} title="Red-flag checklist" eyebrow="2b / Scenario screening">
+              <RedFlagChecklist
+                scenario={analysis.red_flag_checklist.scenario}
+                items={analysis.red_flag_checklist.items}
+              />
+            </SectionCard>
+          )}
 
           <SectionCard icon={Eye} title="Cognitive bias detection" eyebrow="3 / Reasoning Quality">
             {(analysis.cognitive_biases ?? []).length === 0 ? (
@@ -295,23 +312,7 @@ export default function Review() {
           </SectionCard>
 
           <SectionCard icon={BookMarked} title="Guideline cross-reference" eyebrow="7 / Library evidence">
-            {(analysis.guideline_references ?? []).length === 0 ? (
-              <div className="text-sm text-muted-foreground">No guidelines matched this presentation.</div>
-            ) : (
-              <div className="space-y-3">
-                {analysis.guideline_references.map((g: any, i: number) => (
-                  <div key={i} className="flex flex-wrap items-start gap-3 rounded-md border border-border p-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="font-medium">{g.name} <span className="text-muted-foreground">· {g.organization}</span></div>
-                      <p className="mt-1 text-sm text-muted-foreground">{g.notes}</p>
-                    </div>
-                    <span className="rounded-md border border-border bg-surface-muted px-2 py-0.5 text-xs uppercase tracking-wider">
-                      {ALIGNMENT_LABELS[g.alignment as keyof typeof ALIGNMENT_LABELS] ?? g.alignment}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+            <GuidelineMatchPanel refs={analysis.guideline_references ?? []} />
           </SectionCard>
 
           <SectionCard icon={ListChecks} title="All issues" eyebrow="8 / Categorized findings">
