@@ -7,8 +7,8 @@ const capabilities = [
   { icon: Brain, title: "Clinical reasoning audit", body: "Evaluates differential breadth, justification of leading diagnosis, and whether reasoning matches the data presented." },
   { icon: ShieldAlert, title: "Missed red flag detection", body: "Context-aware screening (SNOOP, HEART, sepsis, asthma severity) with severity-graded findings." },
   { icon: Stethoscope, title: "Cognitive bias detection", body: "Surfaces premature closure, anchoring, availability, and attribution bias with cited evidence." },
-  { icon: Layers, title: "Bulk processing queue", body: "Drop a CSV or JSON of notes — the queue processes sequentially and writes an aggregate QA report." },
-  { icon: BookMarked, title: "Guideline cross-reference", body: "AHA, NAEPP, ICHD, IDSA, ADA — your saved guidelines anchor every evidence-based suggestion." },
+  { icon: Layers, title: "Bulk processing queue", body: "Drop a CSV or JSON of notes. The queue processes them sequentially and writes an aggregate QA report." },
+  { icon: BookMarked, title: "Guideline cross-reference", body: "AHA, NAEPP, ICHD, IDSA, ADA. Your saved guidelines anchor every evidence-based suggestion." },
   { icon: Activity, title: "AI performance analytics", body: "Track trust scores and issue categories per AI source over time. Catch regressions after model updates." },
 ];
 
@@ -43,12 +43,12 @@ export default function Landing() {
               Safety oversight for AI-generated notes
             </div>
             <h1 className="mt-6 font-display text-5xl font-semibold leading-[1.05] tracking-tight text-foreground lg:text-6xl">
-              Beyond <em className="not-italic text-accent">"is it written well"</em> —
-              <br />is the clinical thinking <span className="italic">safe and complete?</span>
+              Audit the <em className="not-italic text-accent">clinical thinking</em>,
+              <br />not just the <span className="italic">writing.</span>
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground">
               Vellum is a clinical reasoning auditor for AI-generated documentation. It detects missed
-              red flags, cognitive bias, and weak differentials — and cross-references every finding
+              red flags, cognitive bias, and weak differentials, then cross-references every finding
               against the guidelines your QA team trusts.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -110,7 +110,7 @@ export default function Landing() {
                 <div className="space-y-2 text-xs">
                   <div className="flex items-start gap-2">
                     <span className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded-sm bg-critical-soft text-critical">!</span>
-                    <span><span className="font-medium">Premature closure</span> — diagnosis assigned without documenting exclusion of secondary causes.</span>
+                    <span><span className="font-medium">Premature closure:</span> diagnosis assigned without documenting exclusion of secondary causes.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded-sm bg-important-soft text-important">!</span>
@@ -118,7 +118,7 @@ export default function Landing() {
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded-sm bg-info-soft text-info">i</span>
-                    <span><span className="font-medium">ICHD-3 alignment:</span> Partial — differential breadth missing.</span>
+                    <span><span className="font-medium">ICHD-3 alignment:</span> Partial. Differential breadth missing.</span>
                   </div>
                 </div>
               </div>

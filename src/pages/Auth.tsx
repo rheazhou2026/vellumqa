@@ -43,7 +43,10 @@ export default function Auth() {
           options: { emailRedirectTo: `${window.location.origin}/app` },
         });
         if (error) throw error;
-        toast.success("Account created. You're signed in.");
+        toast.success("Account created. Check your email to verify your address before signing in.", { duration: 8000 });
+        setMode("signin");
+        setPassword("");
+        return;
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: parsed.data.email,
@@ -51,8 +54,8 @@ export default function Auth() {
         });
         if (error) throw error;
         toast.success("Welcome back.");
+        navigate("/app", { replace: true });
       }
-      navigate("/app", { replace: true });
     } catch (e: any) {
       toast.error(e?.message ?? "Authentication failed");
     } finally {
@@ -86,7 +89,7 @@ export default function Auth() {
         </Link>
         <div className="relative">
           <p className="font-display text-3xl leading-tight">
-            "A QA layer that reads notes the way a senior physician would —
+            "A QA layer that reads notes the way a senior physician would,
             looking past the prose for what the clinician didn't think about."
           </p>
           <div className="mt-6 text-xs uppercase tracking-[0.18em] opacity-70">
@@ -109,6 +112,12 @@ export default function Auth() {
               ? "Start auditing AI-generated clinical notes."
               : "Continue your clinical QA work."}
           </p>
+
+          {mode === "signup" && (
+            <div className="mt-4 rounded-md border border-border bg-surface-muted/60 p-3 text-xs text-muted-foreground">
+              After you create your account, we'll send a verification link to your email. Confirm it before signing in.
+            </div>
+          )}
 
           <form onSubmit={onSubmit} className="mt-8 space-y-4">
             <div>

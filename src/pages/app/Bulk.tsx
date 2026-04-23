@@ -210,7 +210,7 @@ export default function Bulk() {
                 {items.map((it) => (
                   <tr key={it.id} className="border-t border-border">
                     <td className="px-3 py-2 font-mono text-xs">{it.position + 1}</td>
-                    <td className="px-3 py-2">{it.patient_label ?? "—"}</td>
+                    <td className="px-3 py-2">{it.patient_label ?? "-"}</td>
                     <td className="px-3 py-2">{it.status}</td>
                     <td className="px-3 py-2 max-w-md truncate text-muted-foreground">{it.note_text}</td>
                   </tr>

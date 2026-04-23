@@ -1,7 +1,6 @@
 // Edge function: process a batch of clinical notes sequentially.
-// Reuses the analyze-note logic and writes an aggregate summary.
+// Writes an aggregate summary across all processed notes.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { runAnalysis } from "../analyze-note/index.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,6 +8,201 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+const SYSTEM_PROMPT = `You are a clinical reasoning auditor and patient safety reviewer.
+You evaluate AI-generated clinical notes for hospital QA teams. You go beyond documentation
+quality and rigorously assess whether the clinical THINKING is safe and complete.
+Be precise, specific, and quote evidence from the note.`;
+
+function buildUserPrompt(note: string, specialty: string | null, chiefComplaint: string | null, guidelines: any[]) {
+  const guidelinesBlock =
+    guidelines.length === 0
+      ? "(No matching guidelines in library.)"
+      : guidelines
+          .map(
+            (g, i) =>
+              `[${i + 1}] ${g.name} \u2014 ${g.organization} (${g.specialty})\nSummary: ${g.summary}\nRecommendations:\n${g.recommendations}\nRed flags: ${g.red_flags ?? "n/a"}\nCitation: ${g.citation ?? "n/a"}`,
+          )
+          .join("\n\n");
+
+  return `## Context\nChief complaint: ${chiefComplaint ?? "not provided"}\nSpecialty: ${specialty ?? "not provided"}\n\n## Clinical Guidelines from QA library\n${guidelinesBlock}\n\n## Clinical note to audit\n"""\n${note}\n"""\n\nReturn your full structured assessment via the submit_clinical_audit tool.`;
+}
+
+const TOOL_SCHEMA = {
+  type: "function",
+  function: {
+    name: "submit_clinical_audit",
+    description: "Submit the structured clinical reasoning audit.",
+    parameters: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        top_clinical_risk: { type: "string" },
+        recognized_pattern: { type: "string" },
+        reasoning_rating: { type: "string", enum: ["Strong", "Adequate", "Weak"] },
+        scores: {
+          type: "object",
+          properties: {
+            safety: { type: "number" },
+            completeness: { type: "number" },
+            accuracy: { type: "number" },
+            reasoning: { type: "number" },
+            overall_trust: { type: "number" },
+          },
+          required: ["safety", "completeness", "accuracy", "reasoning", "overall_trust"],
+          additionalProperties: false,
+        },
+        clinical_reasoning: {
+          type: "object",
+          properties: {
+            summary: { type: "string" },
+            strengths: { type: "array", items: { type: "string" } },
+            gaps: { type: "array", items: { type: "string" } },
+          },
+          required: ["summary", "strengths", "gaps"],
+          additionalProperties: false,
+        },
+        red_flags: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              label: { type: "string" },
+              severity: { type: "string", enum: ["critical", "important", "minor", "info"] },
+              why_matters: { type: "string" },
+              suggested_addition: { type: "string" },
+            },
+            required: ["label", "severity", "why_matters", "suggested_addition"],
+            additionalProperties: false,
+          },
+        },
+        cognitive_biases: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              bias: { type: "string" },
+              evidence: { type: "string" },
+              why_matters: { type: "string" },
+              suggested_fix: { type: "string" },
+            },
+            required: ["bias", "evidence", "why_matters", "suggested_fix"],
+            additionalProperties: false,
+          },
+        },
+        pattern_matches: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              pattern: { type: "string" },
+              expected: { type: "array", items: { type: "string" } },
+              missing: { type: "array", items: { type: "string" } },
+            },
+            required: ["pattern", "expected", "missing"],
+            additionalProperties: false,
+          },
+        },
+        gold_standard: {
+          type: "object",
+          properties: {
+            expected_elements: { type: "array", items: { type: "string" } },
+            present: { type: "array", items: { type: "string" } },
+            missing: { type: "array", items: { type: "string" } },
+          },
+          required: ["expected_elements", "present", "missing"],
+          additionalProperties: false,
+        },
+        risk_impact: {
+          type: "object",
+          properties: {
+            missed_diagnosis_risk: { type: "string" },
+            delayed_escalation_risk: { type: "string" },
+            inappropriate_reassurance_risk: { type: "string" },
+          },
+          required: ["missed_diagnosis_risk", "delayed_escalation_risk", "inappropriate_reassurance_risk"],
+          additionalProperties: false,
+        },
+        guideline_references: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              guideline_id: { type: "string" },
+              name: { type: "string" },
+              organization: { type: "string" },
+              alignment: { type: "string", enum: ["aligned", "partial", "missing", "not_applicable"] },
+              notes: { type: "string" },
+            },
+            required: ["guideline_id", "name", "organization", "alignment", "notes"],
+            additionalProperties: false,
+          },
+        },
+        issues: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              category: {
+                type: "string",
+                enum: ["red_flag", "reasoning", "diagnostic_safety", "documentation", "guideline", "communication"],
+              },
+              severity: { type: "string", enum: ["critical", "important", "minor", "info"] },
+              description: { type: "string" },
+              suggested_fix: { type: "string" },
+            },
+            required: ["category", "severity", "description", "suggested_fix"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: [
+        "top_clinical_risk", "recognized_pattern", "reasoning_rating", "scores",
+        "clinical_reasoning", "red_flags", "cognitive_biases", "pattern_matches",
+        "gold_standard", "risk_impact", "guideline_references", "issues",
+      ],
+    },
+  },
+};
+
+async function runAnalysis(opts: {
+  noteText: string;
+  specialty?: string | null;
+  chiefComplaint?: string | null;
+  guidelines: any[];
+  apiKey: string;
+  model?: string;
+}) {
+  const model = opts.model ?? "google/gemini-2.5-flash";
+  const body = {
+    model,
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: buildUserPrompt(opts.noteText, opts.specialty ?? null, opts.chiefComplaint ?? null, opts.guidelines) },
+    ],
+    tools: [TOOL_SCHEMA],
+    tool_choice: { type: "function", function: { name: "submit_clinical_audit" } },
+  };
+
+  const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${opts.apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!resp.ok) {
+    const txt = await resp.text();
+    const err: any = new Error(`AI gateway ${resp.status}: ${txt}`);
+    err.status = resp.status;
+    throw err;
+  }
+
+  const json = await resp.json();
+  const toolCall = json.choices?.[0]?.message?.tool_calls?.[0];
+  if (!toolCall?.function?.arguments) throw new Error("AI returned no structured audit output");
+  const parsed = JSON.parse(toolCall.function.arguments);
+  return { parsed, model, raw: json };
+}
 
 function pickRelevantGuidelines(noteText: string, all: any[]) {
   const lower = noteText.toLowerCase();
