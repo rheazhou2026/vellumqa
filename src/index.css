@@ -2,87 +2,120 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Clinical QA / Safety Review — Editorial design system.
+   Tone: trustworthy, calm, archival. Looks like a hospital QA dashboard
+   crossed with an editorial publication. All colors HSL.
 */
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Surfaces — warm clinical paper */
+    --background: 38 30% 97%;
+    --foreground: 215 35% 12%;
+
+    --surface: 0 0% 100%;
+    --surface-muted: 38 25% 94%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 215 35% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 215 35% 12%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary — deep clinical ink */
+    --primary: 215 55% 18%;
+    --primary-foreground: 38 40% 97%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary — slate parchment */
+    --secondary: 38 22% 91%;
+    --secondary-foreground: 215 35% 18%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 38 18% 93%;
+    --muted-foreground: 215 14% 40%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent — oxidized teal (clinical / archival) */
+    --accent: 184 38% 32%;
+    --accent-foreground: 38 40% 97%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Risk palette — calibrated for severity */
+    --critical: 358 68% 44%;
+    --critical-foreground: 38 40% 97%;
+    --critical-soft: 358 70% 95%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --important: 28 85% 48%;
+    --important-foreground: 38 40% 97%;
+    --important-soft: 28 80% 94%;
 
-    --radius: 0.5rem;
+    --safe: 152 45% 32%;
+    --safe-foreground: 38 40% 97%;
+    --safe-soft: 152 40% 92%;
+
+    --info: 215 55% 40%;
+    --info-soft: 215 55% 94%;
+
+    --destructive: 358 68% 44%;
+    --destructive-foreground: 38 40% 97%;
+
+    --border: 38 18% 86%;
+    --input: 38 18% 86%;
+    --ring: 184 38% 32%;
+
+    --radius: 0.625rem;
+
+    /* Editorial gradients & shadows */
+    --gradient-paper: linear-gradient(180deg, hsl(38 30% 98%) 0%, hsl(38 25% 95%) 100%);
+    --gradient-ink: linear-gradient(135deg, hsl(215 55% 18%) 0%, hsl(215 50% 28%) 100%);
+    --gradient-risk: linear-gradient(135deg, hsl(358 68% 44%) 0%, hsl(28 85% 48%) 100%);
+    --gradient-safe: linear-gradient(135deg, hsl(152 45% 32%) 0%, hsl(184 38% 32%) 100%);
+
+    --shadow-paper: 0 1px 0 hsl(215 35% 12% / 0.04), 0 1px 3px hsl(215 35% 12% / 0.05);
+    --shadow-elevated: 0 8px 24px -8px hsl(215 35% 18% / 0.18), 0 2px 6px hsl(215 35% 18% / 0.06);
+    --shadow-glow-risk: 0 0 0 1px hsl(358 68% 44% / 0.25), 0 8px 24px -8px hsl(358 68% 44% / 0.3);
+
+    --transition-smooth: cubic-bezier(0.22, 1, 0.36, 1);
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --background: 215 35% 8%;
+    --foreground: 38 30% 95%;
+    --surface: 215 30% 11%;
+    --surface-muted: 215 25% 14%;
+    --card: 215 30% 11%;
+    --card-foreground: 38 30% 95%;
+    --popover: 215 30% 11%;
+    --popover-foreground: 38 30% 95%;
+    --primary: 38 30% 95%;
+    --primary-foreground: 215 55% 18%;
+    --secondary: 215 25% 18%;
+    --secondary-foreground: 38 30% 95%;
+    --muted: 215 25% 16%;
+    --muted-foreground: 215 14% 60%;
+    --accent: 184 38% 45%;
+    --accent-foreground: 215 35% 12%;
+    --critical: 358 68% 55%;
+    --critical-soft: 358 40% 18%;
+    --important: 28 85% 55%;
+    --important-soft: 28 50% 18%;
+    --safe: 152 45% 45%;
+    --safe-soft: 152 30% 16%;
+    --info: 215 55% 60%;
+    --info-soft: 215 30% 18%;
+    --destructive: 358 68% 55%;
+    --destructive-foreground: 38 30% 95%;
+    --border: 215 25% 22%;
+    --input: 215 25% 22%;
+    --ring: 184 38% 45%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -100,6 +133,41 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-feature-settings: 'ss01', 'cv11';
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: 'Fraunces', Georgia, serif;
+    font-feature-settings: 'ss01';
+    letter-spacing: -0.01em;
+  }
+
+  .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+}
+
+@layer components {
+  .paper-card {
+    background: hsl(var(--surface));
+    border: 1px solid hsl(var(--border));
+    box-shadow: var(--shadow-paper);
+    border-radius: var(--radius);
+  }
+
+  .ink-rule {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, hsl(var(--border)), transparent);
+  }
+
+  .scan-line::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(180deg, transparent 0, transparent 28px, hsl(var(--border) / 0.5) 28px, hsl(var(--border) / 0.5) 29px);
+    pointer-events: none;
+    opacity: 0.4;
   }
 }
