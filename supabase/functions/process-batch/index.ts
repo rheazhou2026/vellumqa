@@ -9,10 +9,17 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const SYSTEM_PROMPT = `You are a clinical reasoning auditor and patient safety reviewer.
-You evaluate AI-generated clinical notes for hospital QA teams. You go beyond documentation
-quality and rigorously assess whether the clinical THINKING is safe and complete.
-Be precise, specific, and quote evidence from the note.`;
+const SYSTEM_PROMPT = `You are a senior physician conducting a hospital QA safety audit on an AI-generated clinical note.
+High signal, low noise, immediately actionable. Strict severity calibration:
+- critical: only immediate risk of missed serious dx, unsafe decision, or missing essential safety screening. Cap 1-2 per case.
+- important: incomplete reasoning, follow-up gaps, non-life-threatening med safety.
+- minor: documentation/terminology/formatting.
+Filter irrelevant red flags (e.g. do NOT surface "new headache > 50" when patient is < 50).
+Consolidate overlapping issues by root cause; put supporting failures in subpoints.
+Use clinical-audit phrasing ("Failure to assess..." not "No documentation of...").
+For each guideline, list aligned_elements with note_evidence and missing_elements with guideline_evidence.
+Each issue must include a concrete next_best_step.
+Quote evidence from the note. Do not inflate scores.`;
 
 function buildUserPrompt(note: string, specialty: string | null, chiefComplaint: string | null, guidelines: any[]) {
   const guidelinesBlock =
@@ -50,6 +57,30 @@ const TOOL_SCHEMA = {
             overall_trust: { type: "number" },
           },
           required: ["safety", "completeness", "accuracy", "reasoning", "overall_trust"],
+          additionalProperties: false,
+        },
+        score_rationales: {
+          type: "object",
+          properties: {
+            safety: { type: "string" },
+            completeness: { type: "string" },
+            accuracy: { type: "string" },
+            reasoning: { type: "string" },
+            overall_trust: { type: "string" },
+          },
+          required: ["safety", "completeness", "accuracy", "reasoning", "overall_trust"],
+          additionalProperties: false,
+        },
+        executive_summary: {
+          type: "object",
+          properties: {
+            top_clinical_risk: { type: "string" },
+            headline_action: { type: "string" },
+            one_liner: { type: "string" },
+            critical_count: { type: "number" },
+            important_count: { type: "number" },
+          },
+          required: ["top_clinical_risk", "headline_action", "one_liner", "critical_count", "important_count"],
           additionalProperties: false,
         },
         clinical_reasoning: {
@@ -133,8 +164,32 @@ const TOOL_SCHEMA = {
               organization: { type: "string" },
               alignment: { type: "string", enum: ["aligned", "partial", "missing", "not_applicable"] },
               notes: { type: "string" },
+              aligned_elements: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    element: { type: "string" },
+                    note_evidence: { type: "string" },
+                  },
+                  required: ["element", "note_evidence"],
+                  additionalProperties: false,
+                },
+              },
+              missing_elements: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    element: { type: "string" },
+                    guideline_evidence: { type: "string" },
+                  },
+                  required: ["element", "guideline_evidence"],
+                  additionalProperties: false,
+                },
+              },
             },
-            required: ["guideline_id", "name", "organization", "alignment", "notes"],
+            required: ["guideline_id", "name", "organization", "alignment", "notes", "aligned_elements", "missing_elements"],
             additionalProperties: false,
           },
         },
@@ -150,14 +205,17 @@ const TOOL_SCHEMA = {
               severity: { type: "string", enum: ["critical", "important", "minor", "info"] },
               description: { type: "string" },
               suggested_fix: { type: "string" },
+              next_best_step: { type: "string" },
+              root_cause: { type: "string" },
+              subpoints: { type: "array", items: { type: "string" } },
             },
-            required: ["category", "severity", "description", "suggested_fix"],
+            required: ["category", "severity", "description", "suggested_fix", "next_best_step"],
             additionalProperties: false,
           },
         },
       },
       required: [
-        "top_clinical_risk", "recognized_pattern", "reasoning_rating", "scores",
+        "top_clinical_risk", "recognized_pattern", "reasoning_rating", "scores", "score_rationales", "executive_summary",
         "clinical_reasoning", "red_flags", "cognitive_biases", "pattern_matches",
         "gold_standard", "risk_impact", "guideline_references", "issues",
       ],
@@ -294,7 +352,7 @@ Deno.serve(async (req) => {
     }
     const user = userData.user;
 
-    const { batchId } = await req.json();
+    const { batchId, mode, itemId } = await req.json();
     if (!batchId) {
       return new Response(JSON.stringify({ error: "batchId required" }), {
         status: 400,
@@ -312,11 +370,30 @@ Deno.serve(async (req) => {
 
     await supabase.from("batch_jobs").update({ status: "processing" }).eq("id", batchId);
 
-    const { data: items } = await supabase
+    // Decide which items to (re)process based on mode.
+    // mode = "all"          -> process queued + error items
+    // mode = "retry-failed" -> only error items (and reset them)
+    // mode = "retry-item"   -> a single specific item by itemId
+    let itemsQuery = supabase
       .from("batch_job_items")
       .select("*")
-      .eq("batch_id", batchId)
-      .order("position", { ascending: true });
+      .eq("batch_id", batchId);
+    if (mode === "retry-item" && itemId) {
+      itemsQuery = itemsQuery.eq("id", itemId);
+    } else if (mode === "retry-failed") {
+      itemsQuery = itemsQuery.eq("status", "error");
+    } else {
+      itemsQuery = itemsQuery.in("status", ["queued", "processing", "error"]);
+    }
+    const { data: items } = await itemsQuery.order("position", { ascending: true });
+
+    // For retried items, clear the previous error before re-processing.
+    if (items && items.length > 0 && (mode === "retry-failed" || mode === "retry-item")) {
+      await supabase
+        .from("batch_job_items")
+        .update({ status: "queued", error: null })
+        .in("id", items.map((i: any) => i.id));
+    }
 
     const { data: guidelines } = await supabase
       .from("clinical_guidelines")
@@ -418,18 +495,31 @@ Deno.serve(async (req) => {
 
     const summary = aggregate(allAnalyses ?? analyses);
 
+    // Recompute totals from DB so retries don't break the counters.
+    const { data: allItems } = await supabase
+      .from("batch_job_items")
+      .select("status")
+      .eq("batch_id", batchId);
+    const totalDone = (allItems ?? []).filter((i: any) => i.status === "done").length;
+    const totalErr = (allItems ?? []).filter((i: any) => i.status === "error").length;
+    const totalAll = (allItems ?? []).length;
+    const finalStatus =
+      totalErr === totalAll ? "failed" :
+      totalDone === totalAll ? "completed" :
+      totalErr > 0 ? "completed" : "completed";
+
     await supabase
       .from("batch_jobs")
       .update({
-        status: failed > 0 && processed === 0 ? "failed" : "completed",
-        processed_items: processed,
-        failed_items: failed,
+        status: finalStatus,
+        processed_items: totalDone,
+        failed_items: totalErr,
         aggregate_summary: summary,
         completed_at: new Date().toISOString(),
       })
       .eq("id", batchId);
 
-    return new Response(JSON.stringify({ ok: true, processed, failed, summary }), {
+    return new Response(JSON.stringify({ ok: true, processed, failed, summary, totalDone, totalErr }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e: any) {

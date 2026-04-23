@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { SectionCard } from "@/components/clinical/SectionCard";
 import { toast } from "sonner";
-import { Layers, Upload, Loader2 } from "lucide-react";
+import { Layers, Upload, Loader2, RefreshCw, AlertCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 type Item = { patient_label?: string | null; note_text: string };
@@ -55,6 +55,8 @@ export default function Bulk() {
   const [items, setItems] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [retryingItem, setRetryingItem] = useState<string | null>(null);
+  const [retryingFailed, setRetryingFailed] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const refresh = async () => {
@@ -105,24 +107,57 @@ export default function Bulk() {
     finally { setUploading(false); if (fileRef.current) fileRef.current.value = ""; }
   };
 
+  const reloadBatch = async (id: string) => {
+    const { data: b } = await supabase.from("batch_jobs").select("*").eq("id", id).maybeSingle();
+    setActiveBatch(b);
+    const { data: it } = await supabase.from("batch_job_items").select("*").eq("batch_id", id).order("position");
+    setItems(it ?? []);
+  };
+
+  const invokeBatch = async (body: any) => {
+    const { data, error } = await supabase.functions.invoke("process-batch", { body });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    return data;
+  };
+
   const runBatch = async () => {
     if (!activeBatch) return;
     setProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke("process-batch", { body: { batchId: activeBatch.id } });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      const data = await invokeBatch({ batchId: activeBatch.id });
       toast.success(`Processed ${data.processed} notes (${data.failed} failed)`);
       await refresh();
-      const { data: b } = await supabase.from("batch_jobs").select("*").eq("id", activeBatch.id).maybeSingle();
-      setActiveBatch(b);
-      const { data: it } = await supabase.from("batch_job_items").select("*").eq("batch_id", activeBatch.id).order("position");
-      setItems(it ?? []);
+      await reloadBatch(activeBatch.id);
     } catch (e: any) { toast.error(e?.message ?? "Processing failed"); }
     finally { setProcessing(false); }
   };
 
+  const retryFailed = async () => {
+    if (!activeBatch) return;
+    setRetryingFailed(true);
+    try {
+      const data = await invokeBatch({ batchId: activeBatch.id, mode: "retry-failed" });
+      toast.success(`Retried failed items: ${data.processed} succeeded, ${data.failed} still failing`);
+      await refresh();
+      await reloadBatch(activeBatch.id);
+    } catch (e: any) { toast.error(e?.message ?? "Retry failed"); }
+    finally { setRetryingFailed(false); }
+  };
+
+  const retryItem = async (itemId: string) => {
+    if (!activeBatch) return;
+    setRetryingItem(itemId);
+    try {
+      await invokeBatch({ batchId: activeBatch.id, mode: "retry-item", itemId });
+      toast.success("Item retried");
+      await reloadBatch(activeBatch.id);
+    } catch (e: any) { toast.error(e?.message ?? "Retry failed"); }
+    finally { setRetryingItem(null); }
+  };
+
   const summary = activeBatch?.aggregate_summary;
+  const failedCount = items.filter((i) => i.status === "error").length;
 
   return (
     <div className="space-y-8">
@@ -157,11 +192,20 @@ export default function Bulk() {
           title={activeBatch.label ?? "Batch"}
           eyebrow={`Status: ${activeBatch.status}`}
           action={
-            activeBatch.status !== "completed" && (
-              <Button onClick={runBatch} disabled={processing} className="gap-2 bg-gradient-ink text-primary-foreground hover:opacity-90">
-                {processing ? <><Loader2 className="h-4 w-4 animate-spin" /> Processing…</> : <>Run queue</>}
-              </Button>
-            )
+            <div className="flex flex-wrap gap-2">
+              {failedCount > 0 && (
+                <Button onClick={retryFailed} disabled={retryingFailed || processing} variant="outline" className="gap-2">
+                  {retryingFailed
+                    ? <><Loader2 className="h-4 w-4 animate-spin" /> Retrying...</>
+                    : <><RefreshCw className="h-4 w-4" /> Retry {failedCount} failed</>}
+                </Button>
+              )}
+              {activeBatch.status !== "completed" && (
+                <Button onClick={runBatch} disabled={processing || retryingFailed} className="gap-2 bg-gradient-ink text-primary-foreground hover:opacity-90">
+                  {processing ? <><Loader2 className="h-4 w-4 animate-spin" /> Processing...</> : <>Run queue</>}
+                </Button>
+              )}
+            </div>
           }
         >
           <div className="mb-4 grid grid-cols-3 gap-3 text-center">
@@ -204,15 +248,53 @@ export default function Bulk() {
           <div className="mt-4 max-h-80 overflow-y-auto rounded-md border border-border">
             <table className="w-full text-sm">
               <thead className="bg-surface-muted text-left text-[11px] uppercase tracking-widest text-muted-foreground">
-                <tr><th className="px-3 py-2">#</th><th className="px-3 py-2">Patient</th><th className="px-3 py-2">Status</th><th className="px-3 py-2">Note preview</th></tr>
+                <tr>
+                  <th className="px-3 py-2">#</th>
+                  <th className="px-3 py-2">Patient</th>
+                  <th className="px-3 py-2">Status</th>
+                  <th className="px-3 py-2">Note preview</th>
+                  <th className="px-3 py-2 text-right">Actions</th>
+                </tr>
               </thead>
               <tbody>
                 {items.map((it) => (
                   <tr key={it.id} className="border-t border-border">
                     <td className="px-3 py-2 font-mono text-xs">{it.position + 1}</td>
                     <td className="px-3 py-2">{it.patient_label ?? "-"}</td>
-                    <td className="px-3 py-2">{it.status}</td>
+                    <td className="px-3 py-2">
+                      {it.status === "error" ? (
+                        <span className="inline-flex items-center gap-1 text-critical">
+                          <AlertCircle className="h-3 w-3" /> error
+                        </span>
+                      ) : it.status === "done" ? (
+                        <span className="text-safe">done</span>
+                      ) : (
+                        <span className="text-muted-foreground">{it.status}</span>
+                      )}
+                      {it.status === "error" && it.error && (
+                        <div className="mt-0.5 max-w-[180px] truncate text-[10px] text-muted-foreground" title={it.error}>{it.error}</div>
+                      )}
+                    </td>
                     <td className="px-3 py-2 max-w-md truncate text-muted-foreground">{it.note_text}</td>
+                    <td className="px-3 py-2 text-right">
+                      {it.status === "error" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 gap-1 px-2 text-xs"
+                          onClick={() => retryItem(it.id)}
+                          disabled={retryingItem === it.id || processing || retryingFailed}
+                        >
+                          {retryingItem === it.id
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : <RefreshCw className="h-3 w-3" />}
+                          Retry
+                        </Button>
+                      )}
+                      {it.status === "done" && it.analysis_id && (
+                        <a href={`/app/review/${it.analysis_id}`} className="text-xs text-accent">Open →</a>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

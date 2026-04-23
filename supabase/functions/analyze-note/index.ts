@@ -9,44 +9,83 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const SYSTEM_PROMPT = `You are a clinical reasoning auditor and patient safety reviewer.
-You evaluate AI-generated clinical notes for hospital QA teams. You go beyond documentation
-quality and rigorously assess whether the clinical THINKING is safe and complete.
+const SYSTEM_PROMPT = `You are a senior physician conducting a hospital QA safety audit on an AI-generated clinical note.
+You write like an attending reviewing a resident's chart, not like a generic AI critic.
+Your output must be high-signal, low-noise, and immediately actionable.
 
-You produce structured findings covering:
-1. CLINICAL REASONING ANALYSIS — differential breadth, justification of leading diagnosis,
-   alternatives considered, whether reasoning matches presented data.
-2. RED FLAG CHECKLIST — first identify the appropriate scenario-specific checklist
-   (e.g. SNOOP for headache, HEART for chest pain, qSOFA/SIRS for infection, NAEPP
-   severity for asthma, ACS chest-pain ROS, stroke FAST, etc.). For each checklist
-   item, report whether it was screened/documented in the note (status = present),
-   not screened (status = missing), or not applicable (status = not_applicable). Then
-   surface the missing items as red_flags with severity grading.
-3. COGNITIVE BIAS DETECTION — premature closure, anchoring, availability, attribution.
-   Cite evidence from the note.
-4. PATTERN RECOGNITION — recognize the clinical pattern (e.g. "new persistent headache",
-   "undifferentiated chest pain", "infection symptoms", "daily analgesic use") and flag
-   missing expected elements for that pattern.
-5. GOLD STANDARD — what a best-practice note for THIS specific presentation should include.
-6. RISK IMPACT — concrete clinical risks (missed diagnosis, delayed escalation,
-   inappropriate reassurance) tied to the actual case.
-7. GUIDELINE CROSS-REFERENCE — for every provided guideline, indicate whether it
-   applies, then list the specific recommended elements that ARE present in the note
-   (aligned_elements) and the specific recommended elements that are MISSING from the
-   note (missing_elements). Use direct quotes or paraphrases of guideline language.
-8. ISSUES — categorized as: red_flag, reasoning, diagnostic_safety, documentation,
-   guideline, communication. Severity = critical, important, minor, info. Missing red
-   flag screening is CRITICAL when relevant.
-9. SCORING (0-100): safety, completeness, accuracy, reasoning. Overall trust score is
-   the weighted mean (safety 35%, reasoning 30%, accuracy 20%, completeness 15%).
-   Do NOT inflate scores when reasoning is incomplete. Missing red flag screening
-   significantly lowers safety. Weak differential lowers completeness AND accuracy.
-   Cognitive bias lowers reasoning.
-10. TOP CLINICAL RISK — single most important takeaway for the reviewer (e.g.
-    "Potential missed secondary headache due to lack of red flag screening").
+CORE OUTPUT EXPECTATIONS
+1. CLINICAL REASONING ANALYSIS - Assess differential breadth, justification of the leading diagnosis,
+   alternatives explicitly considered/excluded, and whether reasoning matches the presented data.
+2. RED FLAG CHECKLIST - Identify the scenario-appropriate checklist (SNOOP for headache, HEART for
+   chest pain, qSOFA/SIRS for infection, NAEPP for asthma, FAST for stroke, etc.). For every item,
+   set status to present, missing, or not_applicable, with brief evidence from the note.
+3. SURFACED RED FLAGS - Only surface red flags that are clinically relevant to THIS patient.
+   Strict suppression rules:
+     - Suppress age-conditional flags when the patient is clearly outside the at-risk band
+       (e.g. do NOT surface "new headache > 50" if the documented patient is < 50).
+     - Suppress sex/pregnancy/comorbidity-conditional flags when the underlying condition is
+       clearly absent.
+     - If a flag is borderline relevant, you MAY surface it but mark severity as minor or info.
+   Internal checklist tracking still happens, but the surfaced red_flags array must be
+   precision-filtered.
+4. COGNITIVE BIAS DETECTION - Premature closure, anchoring, availability, attribution. Cite
+   direct evidence from the note. Do not invent biases.
+5. PATTERN RECOGNITION - Name the clinical pattern and list expected vs missing elements.
+6. GOLD STANDARD - What a best-practice note for THIS specific presentation should include.
+7. RISK IMPACT - Concrete, case-specific risks (missed diagnosis, delayed escalation,
+   inappropriate reassurance).
+8. GUIDELINE CROSS-REFERENCE - For every provided guideline, set alignment, then for each
+   recommended element list whether it is aligned or missing AND include a short evidence
+   snippet:
+     - aligned elements: include the exact (or near-exact) quote/paraphrase from the note
+       that satisfies the recommendation in note_evidence.
+     - missing elements: include the exact guideline phrase or expected action that is absent
+       in guideline_evidence, so a reviewer can see WHY it was marked missing.
+9. ISSUES - Categorized as: red_flag, reasoning, diagnostic_safety, documentation, guideline,
+   communication. See SEVERITY CALIBRATION below. Each issue must include a "next_best_step"
+   that is a concrete clinical action a clinician can take immediately (more actionable than
+   "suggested_fix"). Group issues by root cause when possible (see CONSOLIDATION).
 
-Be precise. Be specific. Quote evidence from the note. Use clinical language a
-physician would trust.`;
+SEVERITY CALIBRATION (STRICT)
+- critical: Reserved for IMMEDIATE risk of missed serious diagnosis, an unsafe clinical
+  decision (e.g. premature closure with no rule-out of a dangerous mimic), or a missing
+  essential safety screening (e.g. SNOOP in a true new headache).
+  HARD CAP: at most 2 critical issues per case unless multiple INDEPENDENT life-threatening
+  risks genuinely exist. If you would emit more, downgrade the less severe ones to important.
+- important: Incomplete reasoning, missing secondary considerations, follow-up gaps,
+  medication safety issues that are not immediately life-threatening.
+- minor: Documentation clarity, terminology, formatting.
+- info: Stylistic or contextual notes only.
+
+CONSOLIDATION
+- If multiple issues stem from one root cause (e.g. missing SNOOP + premature closure +
+  no differential, all flowing from "failure to evaluate new persistent headache"), emit
+  ONE primary issue and put the supporting failures in subpoints.
+- Order issues by severity, then by clinical impact.
+
+LANGUAGE PRECISION
+- Use clinical-audit phrasing, not generic AI critique. Examples:
+  "Failure to assess..." instead of "No documentation of...".
+  "Increases risk of..." instead of "Could lead to issues".
+  "Not evaluated" or "Not addressed" instead of bare "Missing".
+- Quote evidence from the note when calling out gaps.
+
+SCORING (0-100)
+- safety, completeness, accuracy, reasoning, overall_trust (weighted: safety 35%,
+  reasoning 30%, accuracy 20%, completeness 15%).
+- Do NOT inflate. Missing red flag screening drops safety. Weak differential drops
+  completeness AND accuracy. Cognitive bias drops reasoning.
+- For EACH score, return a one-line score_rationale explaining the deduction in plain
+  clinical language (e.g. "Reduced due to premature closure and absent differential").
+
+EXECUTIVE SUMMARY
+Return executive_summary with:
+- top_clinical_risk: one tight sentence.
+- headline_action: the single most important next clinical action.
+- critical_count, important_count.
+- one_liner: a 10-second case verdict for a busy reviewer.
+
+Be precise. Be specific. Sound like a senior clinician.`;
 
 function buildUserPrompt(note: string, specialty: string | null, chiefComplaint: string | null, guidelines: any[]) {
   const guidelinesBlock =
@@ -101,6 +140,30 @@ const TOOL_SCHEMA = {
             overall_trust: { type: "number" },
           },
           required: ["safety", "completeness", "accuracy", "reasoning", "overall_trust"],
+          additionalProperties: false,
+        },
+        score_rationales: {
+          type: "object",
+          properties: {
+            safety: { type: "string" },
+            completeness: { type: "string" },
+            accuracy: { type: "string" },
+            reasoning: { type: "string" },
+            overall_trust: { type: "string" },
+          },
+          required: ["safety", "completeness", "accuracy", "reasoning", "overall_trust"],
+          additionalProperties: false,
+        },
+        executive_summary: {
+          type: "object",
+          properties: {
+            top_clinical_risk: { type: "string" },
+            headline_action: { type: "string" },
+            one_liner: { type: "string" },
+            critical_count: { type: "number" },
+            important_count: { type: "number" },
+          },
+          required: ["top_clinical_risk", "headline_action", "one_liner", "critical_count", "important_count"],
           additionalProperties: false,
         },
         clinical_reasoning: {
@@ -209,8 +272,30 @@ const TOOL_SCHEMA = {
               organization: { type: "string" },
               alignment: { type: "string", enum: ["aligned", "partial", "missing", "not_applicable"] },
               notes: { type: "string" },
-              aligned_elements: { type: "array", items: { type: "string" } },
-              missing_elements: { type: "array", items: { type: "string" } },
+              aligned_elements: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    element: { type: "string" },
+                    note_evidence: { type: "string" },
+                  },
+                  required: ["element", "note_evidence"],
+                  additionalProperties: false,
+                },
+              },
+              missing_elements: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    element: { type: "string" },
+                    guideline_evidence: { type: "string" },
+                  },
+                  required: ["element", "guideline_evidence"],
+                  additionalProperties: false,
+                },
+              },
             },
             required: ["guideline_id", "name", "organization", "alignment", "notes", "aligned_elements", "missing_elements"],
             additionalProperties: false,
@@ -235,8 +320,11 @@ const TOOL_SCHEMA = {
               severity: { type: "string", enum: ["critical", "important", "minor", "info"] },
               description: { type: "string" },
               suggested_fix: { type: "string" },
+              next_best_step: { type: "string" },
+              root_cause: { type: "string" },
+              subpoints: { type: "array", items: { type: "string" } },
             },
-            required: ["category", "severity", "description", "suggested_fix"],
+            required: ["category", "severity", "description", "suggested_fix", "next_best_step"],
             additionalProperties: false,
           },
         },
@@ -246,6 +334,8 @@ const TOOL_SCHEMA = {
         "recognized_pattern",
         "reasoning_rating",
         "scores",
+        "score_rationales",
+        "executive_summary",
         "clinical_reasoning",
         "red_flags",
         "red_flag_checklist",
@@ -437,11 +527,15 @@ Deno.serve(async (req) => {
     if (analysisErr) throw analysisErr;
 
     // Enrich the response with fields not stored in dedicated columns
-    // (red_flag_checklist; richer aligned/missing guideline elements)
+    // (red_flag_checklist; richer aligned/missing guideline elements;
+    //  executive summary, score rationales, next_best_step on issues)
     const enrichedAnalysis = {
       ...analysisRow,
       red_flag_checklist: parsed.red_flag_checklist ?? null,
       guideline_references: parsed.guideline_references ?? analysisRow.guideline_references,
+      executive_summary: parsed.executive_summary ?? null,
+      score_rationales: parsed.score_rationales ?? null,
+      issues: parsed.issues ?? analysisRow.issues,
     };
 
     return new Response(

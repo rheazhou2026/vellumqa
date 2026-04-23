@@ -1,13 +1,16 @@
 import { ALIGNMENT_LABELS } from "@/lib/clinical-types";
 
+type AlignedElement = string | { element: string; note_evidence?: string };
+type MissingElement = string | { element: string; guideline_evidence?: string };
+
 interface GuidelineRef {
   guideline_id: string;
   name: string;
   organization: string;
   alignment: "aligned" | "partial" | "missing" | "not_applicable";
   notes: string;
-  aligned_elements?: string[];
-  missing_elements?: string[];
+  aligned_elements?: AlignedElement[];
+  missing_elements?: MissingElement[];
 }
 
 const ALIGN_CLS: Record<string, string> = {
@@ -16,6 +19,15 @@ const ALIGN_CLS: Record<string, string> = {
   missing: "border-critical/40 bg-critical-soft/30 text-critical",
   not_applicable: "border-border bg-surface-muted text-muted-foreground",
 };
+
+function unpackAligned(x: AlignedElement) {
+  if (typeof x === "string") return { element: x, evidence: "" };
+  return { element: x.element, evidence: x.note_evidence ?? "" };
+}
+function unpackMissing(x: MissingElement) {
+  if (typeof x === "string") return { element: x, evidence: "" };
+  return { element: x.element, evidence: x.guideline_evidence ?? "" };
+}
 
 export function GuidelineMatchPanel({ refs }: { refs: GuidelineRef[] }) {
   if (!refs || refs.length === 0) {
@@ -40,20 +52,40 @@ export function GuidelineMatchPanel({ refs }: { refs: GuidelineRef[] }) {
               <div>
                 <div className="mb-1 text-[10px] uppercase tracking-widest text-safe">Aligned elements</div>
                 {g.aligned_elements?.length ? (
-                  <ul className="space-y-1 text-sm">
-                    {g.aligned_elements.map((x, j) => (
-                      <li key={j} className="flex gap-1.5"><span className="text-safe">✓</span>{x}</li>
-                    ))}
+                  <ul className="space-y-2 text-sm">
+                    {g.aligned_elements.map((x, j) => {
+                      const { element, evidence } = unpackAligned(x);
+                      return (
+                        <li key={j} className="rounded-sm border border-safe/20 bg-safe-soft/20 p-2">
+                          <div className="flex gap-1.5"><span className="text-safe">✓</span><span className="font-medium">{element}</span></div>
+                          {evidence && (
+                            <div className="mt-1 border-l-2 border-safe/40 pl-2 text-xs italic text-muted-foreground">
+                              <span className="not-italic font-medium text-foreground/70">From note: </span>"{evidence}"
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 ) : <div className="text-xs text-muted-foreground">None recorded.</div>}
               </div>
               <div>
                 <div className="mb-1 text-[10px] uppercase tracking-widest text-critical">Missing elements</div>
                 {g.missing_elements?.length ? (
-                  <ul className="space-y-1 text-sm">
-                    {g.missing_elements.map((x, j) => (
-                      <li key={j} className="flex gap-1.5"><span className="text-critical">✗</span>{x}</li>
-                    ))}
+                  <ul className="space-y-2 text-sm">
+                    {g.missing_elements.map((x, j) => {
+                      const { element, evidence } = unpackMissing(x);
+                      return (
+                        <li key={j} className="rounded-sm border border-critical/20 bg-critical-soft/20 p-2">
+                          <div className="flex gap-1.5"><span className="text-critical">✗</span><span className="font-medium">{element}</span></div>
+                          {evidence && (
+                            <div className="mt-1 border-l-2 border-critical/40 pl-2 text-xs italic text-muted-foreground">
+                              <span className="not-italic font-medium text-foreground/70">Guideline expects: </span>"{evidence}"
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 ) : <div className="text-xs text-muted-foreground">None recorded.</div>}
               </div>
