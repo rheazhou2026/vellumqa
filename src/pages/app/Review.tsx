@@ -18,7 +18,7 @@ import {
   Brain, ShieldAlert, Eye, Sparkles, BookMarked, Target, AlertTriangle, ListChecks, Loader2,
   RefreshCw, FileDown, FileText, AlertCircle,
 } from "lucide-react";
-import { CATEGORY_LABELS, ALIGNMENT_LABELS, SAMPLE_HEADACHE_NOTE } from "@/lib/clinical-types";
+import { CATEGORY_LABELS, SAMPLE_HEADACHE_NOTE } from "@/lib/clinical-types";
 
 export default function Review() {
   const { analysisId } = useParams();
