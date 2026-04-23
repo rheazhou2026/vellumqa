@@ -304,6 +304,10 @@ export default function Review() {
                       ))}
                     </div>
                   )}
+                  <SuppressedFlagsPanel
+                    suppressed={analysis.suppressed_red_flags ?? []}
+                    notApplicableItems={(analysis.red_flag_checklist?.items ?? []).filter((it: any) => it.status === "not_applicable")}
+                  />
                 </div>
                 <div>
                   <SubHeading icon={AlertTriangle} title="Risk impact" />
