@@ -10,9 +10,13 @@ import { SectionCard } from "@/components/clinical/SectionCard";
 import { ScoreGauge } from "@/components/clinical/ScoreGauge";
 import { TopRiskBanner } from "@/components/clinical/TopRiskBanner";
 import { SeverityBadge } from "@/components/clinical/SeverityBadge";
+import { RedFlagChecklist } from "@/components/clinical/RedFlagChecklist";
+import { GuidelineMatchPanel } from "@/components/clinical/GuidelineMatchPanel";
+import { exportAuditAsCSV, exportAuditAsPDF } from "@/lib/export-report";
 import { toast } from "sonner";
 import {
   Brain, ShieldAlert, Eye, Sparkles, BookMarked, Target, AlertTriangle, ListChecks, Loader2,
+  RefreshCw, FileDown, FileText, AlertCircle,
 } from "lucide-react";
 import { CATEGORY_LABELS, ALIGNMENT_LABELS, SAMPLE_HEADACHE_NOTE } from "@/lib/clinical-types";
 
@@ -26,6 +30,7 @@ export default function Review() {
   const [sources, setSources] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState<any | null>(null);
+  const [errorInfo, setErrorInfo] = useState<{ status?: number; message: string; raw?: any } | null>(null);
 
   useEffect(() => {
     supabase.from("ai_sources").select("id, name, vendor").then(({ data }) => setSources(data ?? []));
@@ -46,16 +51,34 @@ export default function Review() {
     }
     setLoading(true);
     setAnalysis(null);
+    setErrorInfo(null);
     try {
       const { data, error } = await supabase.functions.invoke("analyze-note", {
         body: { noteText, chiefComplaint, specialty, patientLabel, aiSourceId },
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      if (error) {
+        // FunctionsHttpError exposes response status via context.response
+        let status: number | undefined;
+        let body: any = null;
+        try {
+          status = (error as any)?.context?.response?.status;
+          body = await (error as any)?.context?.response?.json?.();
+        } catch { /* ignore */ }
+        setErrorInfo({
+          status,
+          message: body?.error ?? error.message ?? "Edge function failed",
+          raw: body ?? null,
+        });
+        return;
+      }
+      if (data?.error) {
+        setErrorInfo({ message: data.error, raw: data });
+        return;
+      }
       setAnalysis(data.analysis);
       toast.success("Audit complete");
     } catch (e: any) {
-      toast.error(e?.message ?? "Analysis failed");
+      setErrorInfo({ message: e?.message ?? "Analysis failed" });
     } finally {
       setLoading(false);
     }
@@ -67,6 +90,37 @@ export default function Review() {
         <div className="text-[11px] uppercase tracking-[0.18em] text-accent">Single Note</div>
         <h1 className="mt-2 font-display text-4xl font-semibold">Clinical reasoning audit</h1>
       </header>
+
+      {errorInfo && (
+        <div className="rounded-md border border-critical/40 bg-critical-soft/30 p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 h-5 w-5 text-critical" />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <div className="text-sm font-semibold text-critical">Audit failed</div>
+                {errorInfo.status != null && (
+                  <span className="rounded-sm border border-critical/40 bg-background px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-widest text-critical">
+                    HTTP {errorInfo.status}
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 text-sm text-foreground">{errorInfo.message}</p>
+              {errorInfo.raw && (
+                <details className="mt-2 text-xs text-muted-foreground">
+                  <summary className="cursor-pointer">Raw response</summary>
+                  <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-all rounded bg-background p-2 font-mono text-[10px]">{JSON.stringify(errorInfo.raw, null, 2)}</pre>
+                </details>
+              )}
+              <div className="mt-3 flex gap-2">
+                <Button size="sm" variant="outline" onClick={runAnalysis} disabled={loading} className="gap-1.5">
+                  <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} /> Retry audit
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setErrorInfo(null)}>Dismiss</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {!analysis && (
         <SectionCard title="Submit a note for review" eyebrow="Input">
