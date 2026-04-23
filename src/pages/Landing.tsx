@@ -43,12 +43,12 @@ export default function Landing() {
               Safety oversight for AI-generated notes
             </div>
             <h1 className="mt-6 font-display text-5xl font-semibold leading-[1.05] tracking-tight text-foreground lg:text-6xl">
-              Beyond <em className="not-italic text-accent">"is it written well"</em> —
-              <br />is the clinical thinking <span className="italic">safe and complete?</span>
+              Audit the <em className="not-italic text-accent">clinical thinking</em>,
+              <br />not just the <span className="italic">writing.</span>
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground">
               Vellum is a clinical reasoning auditor for AI-generated documentation. It detects missed
-              red flags, cognitive bias, and weak differentials — and cross-references every finding
+              red flags, cognitive bias, and weak differentials, then cross-references every finding
               against the guidelines your QA team trusts.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
