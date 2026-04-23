@@ -508,11 +508,33 @@ Deno.serve(async (req) => {
     const { noteText, patientLabel, chiefComplaint, specialty, aiSourceId } =
       await req.json();
 
-    if (!noteText || typeof noteText !== "string" || noteText.trim().length < 20) {
-      return new Response(JSON.stringify({ error: "noteText must be at least 20 characters" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const MAX_NOTE_CHARS = 32_000;
+    const MAX_LABEL_CHARS = 200;
+    if (
+      !noteText ||
+      typeof noteText !== "string" ||
+      noteText.trim().length < 20 ||
+      noteText.length > MAX_NOTE_CHARS
+    ) {
+      return new Response(
+        JSON.stringify({ error: `noteText must be 20–${MAX_NOTE_CHARS} characters` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const isShortStr = (v: unknown) =>
+      v === undefined || v === null || (typeof v === "string" && v.length <= MAX_LABEL_CHARS);
+    if (!isShortStr(patientLabel) || !isShortStr(chiefComplaint) || !isShortStr(specialty)) {
+      return new Response(
+        JSON.stringify({ error: "patientLabel, chiefComplaint, and specialty must be strings under 200 characters" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (aiSourceId !== undefined && aiSourceId !== null && (typeof aiSourceId !== "string" || !UUID_RE.test(aiSourceId))) {
+      return new Response(
+        JSON.stringify({ error: "aiSourceId must be a valid UUID" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     // Fetch guideline library
@@ -617,10 +639,14 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e: any) {
-    console.error("analyze-note error", e);
-    return new Response(JSON.stringify({ error: e?.message ?? "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const correlationId = crypto.randomUUID();
+    console.error("analyze-note error", correlationId, e);
+    return new Response(
+      JSON.stringify({
+        error: "Analysis failed. Please try again.",
+        correlation_id: correlationId,
+      }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 });

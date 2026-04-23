@@ -353,11 +353,23 @@ Deno.serve(async (req) => {
     const user = userData.user;
 
     const { batchId, mode, itemId } = await req.json();
-    if (!batchId) {
-      return new Response(JSON.stringify({ error: "batchId required" }), {
-        status: 400,
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const VALID_MODES = ["all", "retry-failed", "retry-item"] as const;
+    const errResp = (status: number, error: string) =>
+      new Response(JSON.stringify({ error }), {
+        status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    if (!batchId || typeof batchId !== "string" || !UUID_RE.test(batchId)) {
+      return errResp(400, "Invalid batchId");
+    }
+    if (mode !== undefined && mode !== null && !VALID_MODES.includes(mode)) {
+      return errResp(400, "Invalid mode");
+    }
+    if (mode === "retry-item") {
+      if (!itemId || typeof itemId !== "string" || !UUID_RE.test(itemId)) {
+        return errResp(400, "Invalid itemId");
+      }
     }
 
     const { data: batch, error: batchErr } = await supabase
@@ -365,8 +377,12 @@ Deno.serve(async (req) => {
       .select("*")
       .eq("id", batchId)
       .single();
-    if (batchErr || !batch) throw new Error("Batch not found");
-    if (batch.user_id !== user.id) throw new Error("Forbidden");
+    if (batchErr || !batch) {
+      return errResp(404, "Batch not found");
+    }
+    if (batch.user_id !== user.id) {
+      return errResp(403, "Forbidden");
+    }
 
     await supabase.from("batch_jobs").update({ status: "processing" }).eq("id", batchId);
 
@@ -523,10 +539,14 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e: any) {
-    console.error("process-batch error", e);
-    return new Response(JSON.stringify({ error: e?.message ?? "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const correlationId = crypto.randomUUID();
+    console.error("process-batch error", correlationId, e);
+    return new Response(
+      JSON.stringify({
+        error: "Batch processing failed. Please try again.",
+        correlation_id: correlationId,
+      }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 });
