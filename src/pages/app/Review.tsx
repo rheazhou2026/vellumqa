@@ -18,6 +18,8 @@ import { IssueCard } from "@/components/clinical/IssueCard";
 import { SeverityBadge } from "@/components/clinical/SeverityBadge";
 import { RedFlagChecklist } from "@/components/clinical/RedFlagChecklist";
 import { GuidelineMatchPanel } from "@/components/clinical/GuidelineMatchPanel";
+import { ScoreEvidencePopover } from "@/components/clinical/ScoreEvidencePopover";
+import { SuppressedFlagsPanel } from "@/components/clinical/SuppressedFlagsPanel";
 import { exportAuditAsCSV, exportAuditAsPDF } from "@/lib/export-report";
 import { toast } from "sonner";
 import {
@@ -121,6 +123,8 @@ export default function Review() {
     { key: "completeness", label: "Completeness", value: analysis.completeness_score },
   ] : [];
   const rationales = analysis?.score_rationales ?? {};
+  const evidence = analysis?.score_evidence ?? {};
+  const evidenceKeys = new Set(["safety", "reasoning", "overall_trust"]);
 
   return (
     <div className="space-y-6">
@@ -238,19 +242,35 @@ export default function Review() {
                 <div className="grid gap-6 sm:grid-cols-4">
                   {scoreRows.map((s) => (
                     <div key={s.key} className="flex flex-col items-center gap-2 text-center">
-                      <ScoreGauge label={s.label} score={Number(s.value)} />
-                      {rationales[s.key] && (
+                      {evidenceKeys.has(s.key) ? (
+                        <ScoreEvidencePopover
+                          label={s.label}
+                          score={Number(s.value)}
+                          rationale={rationales[s.key]}
+                          evidence={evidence[s.key]}
+                        />
+                      ) : (
+                        <ScoreGauge label={s.label} score={Number(s.value)} />
+                      )}
+                      {rationales[s.key] && !evidenceKeys.has(s.key) && (
                         <p className="text-xs leading-snug text-muted-foreground">{rationales[s.key]}</p>
                       )}
                     </div>
                   ))}
                 </div>
-                {rationales.overall_trust && (
-                  <div className="mt-5 flex items-start gap-2 rounded-md border border-border bg-surface-muted/40 p-3">
-                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                    <div>
-                      <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Overall trust rationale</div>
-                      <p className="mt-0.5 text-sm">{rationales.overall_trust}</p>
+                {(rationales.overall_trust || (evidence.overall_trust?.length ?? 0) > 0) && (
+                  <div className="mt-5 rounded-md border border-border bg-surface-muted/40 p-3">
+                    <div className="flex items-start gap-2">
+                      <Info className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Overall trust rationale</div>
+                          <span className="text-[10px] uppercase tracking-widest text-accent/80">
+                            Click any of Safety, Reasoning, or Overall to see source quotes
+                          </span>
+                        </div>
+                        {rationales.overall_trust && <p className="mt-0.5 text-sm">{rationales.overall_trust}</p>}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -284,6 +304,10 @@ export default function Review() {
                       ))}
                     </div>
                   )}
+                  <SuppressedFlagsPanel
+                    suppressed={analysis.suppressed_red_flags ?? []}
+                    notApplicableItems={(analysis.red_flag_checklist?.items ?? []).filter((it: any) => it.status === "not_applicable")}
+                  />
                 </div>
                 <div>
                   <SubHeading icon={AlertTriangle} title="Risk impact" />

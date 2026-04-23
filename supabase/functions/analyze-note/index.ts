@@ -77,6 +77,21 @@ SCORING (0-100)
   completeness AND accuracy. Cognitive bias drops reasoning.
 - For EACH score, return a one-line score_rationale explaining the deduction in plain
   clinical language (e.g. "Reduced due to premature closure and absent differential").
+- For SAFETY, REASONING, and OVERALL_TRUST, also return score_evidence: an array of
+  short verbatim quotes from the clinical note (or the explicit absence of an
+  expected element) that drove the deduction. Each entry should include the
+  short note quote (or "(not documented in note)" when the deduction is for an
+  absence) and a one-line clinician-facing reason for why it lowered the score.
+
+SUPPRESSED RED FLAGS
+- For every red flag you internally considered but did NOT surface (because the
+  patient is outside the at-risk band, or the underlying condition is clearly
+  absent), add an entry to suppressed_red_flags with:
+    label: the red flag name
+    reason: a brief clinician-facing explanation citing the note (e.g.
+      "Patient is 28; age-conditional flag '>50' does not apply.")
+- This keeps the surfaced red_flags list precise while still showing the
+  reviewer that the screen was considered.
 
 EXECUTIVE SUMMARY
 Return executive_summary with:
@@ -153,6 +168,61 @@ const TOOL_SCHEMA = {
           },
           required: ["safety", "completeness", "accuracy", "reasoning", "overall_trust"],
           additionalProperties: false,
+        },
+        score_evidence: {
+          type: "object",
+          properties: {
+            safety: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  quote: { type: "string" },
+                  reason: { type: "string" },
+                },
+                required: ["quote", "reason"],
+                additionalProperties: false,
+              },
+            },
+            reasoning: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  quote: { type: "string" },
+                  reason: { type: "string" },
+                },
+                required: ["quote", "reason"],
+                additionalProperties: false,
+              },
+            },
+            overall_trust: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  quote: { type: "string" },
+                  reason: { type: "string" },
+                },
+                required: ["quote", "reason"],
+                additionalProperties: false,
+              },
+            },
+          },
+          required: ["safety", "reasoning", "overall_trust"],
+          additionalProperties: false,
+        },
+        suppressed_red_flags: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              label: { type: "string" },
+              reason: { type: "string" },
+            },
+            required: ["label", "reason"],
+            additionalProperties: false,
+          },
         },
         executive_summary: {
           type: "object",
@@ -335,6 +405,8 @@ const TOOL_SCHEMA = {
         "reasoning_rating",
         "scores",
         "score_rationales",
+        "score_evidence",
+        "suppressed_red_flags",
         "executive_summary",
         "clinical_reasoning",
         "red_flags",
@@ -535,6 +607,8 @@ Deno.serve(async (req) => {
       guideline_references: parsed.guideline_references ?? analysisRow.guideline_references,
       executive_summary: parsed.executive_summary ?? null,
       score_rationales: parsed.score_rationales ?? null,
+      score_evidence: parsed.score_evidence ?? null,
+      suppressed_red_flags: parsed.suppressed_red_flags ?? [],
       issues: parsed.issues ?? analysisRow.issues,
     };
 
