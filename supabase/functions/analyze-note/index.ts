@@ -77,6 +77,21 @@ SCORING (0-100)
   completeness AND accuracy. Cognitive bias drops reasoning.
 - For EACH score, return a one-line score_rationale explaining the deduction in plain
   clinical language (e.g. "Reduced due to premature closure and absent differential").
+- For SAFETY, REASONING, and OVERALL_TRUST, also return score_evidence: an array of
+  short verbatim quotes from the clinical note (or the explicit absence of an
+  expected element) that drove the deduction. Each entry should include the
+  short note quote (or "(not documented in note)" when the deduction is for an
+  absence) and a one-line clinician-facing reason for why it lowered the score.
+
+SUPPRESSED RED FLAGS
+- For every red flag you internally considered but did NOT surface (because the
+  patient is outside the at-risk band, or the underlying condition is clearly
+  absent), add an entry to suppressed_red_flags with:
+    label: the red flag name
+    reason: a brief clinician-facing explanation citing the note (e.g.
+      "Patient is 28; age-conditional flag '>50' does not apply.")
+- This keeps the surfaced red_flags list precise while still showing the
+  reviewer that the screen was considered.
 
 EXECUTIVE SUMMARY
 Return executive_summary with:
