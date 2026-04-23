@@ -123,6 +123,8 @@ export default function Review() {
     { key: "completeness", label: "Completeness", value: analysis.completeness_score },
   ] : [];
   const rationales = analysis?.score_rationales ?? {};
+  const evidence = analysis?.score_evidence ?? {};
+  const evidenceKeys = new Set(["safety", "reasoning", "overall_trust"]);
 
   return (
     <div className="space-y-6">
