@@ -405,6 +405,8 @@ const TOOL_SCHEMA = {
         "reasoning_rating",
         "scores",
         "score_rationales",
+        "score_evidence",
+        "suppressed_red_flags",
         "executive_summary",
         "clinical_reasoning",
         "red_flags",
