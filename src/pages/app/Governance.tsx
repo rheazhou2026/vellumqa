@@ -3,6 +3,7 @@ import { useParams, NavLink } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import PageHeader from "@/components/vellum/PageHeader";
 import StubPanel from "@/components/vellum/StubPanel";
+import CalibrationTab from "@/components/vellum/CalibrationTab";
 
 const TABS = [
   { to: "/governance", label: "Rubric Studio" },
@@ -64,9 +65,13 @@ export default function Governance() {
             )}
           </div>
         </div>
+      ) : tab === "calibration" ? (
+        <div className="p-6">
+          <CalibrationTab />
+        </div>
       ) : (
         <div className="p-6">
-          <StubPanel title={`${tab} workspace`} description="Library tables, conflict detector, kanban for corrective actions, and reliability curves for calibration land in subsequent passes." />
+          <StubPanel title={`${tab} workspace`} description="Library tables, conflict detector, and kanban for corrective actions land in subsequent passes." />
         </div>
       )}
     </div>
