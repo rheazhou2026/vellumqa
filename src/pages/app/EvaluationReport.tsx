@@ -15,6 +15,10 @@ import { downloadEvaluationPdf } from "@/components/vellum/EvaluationPdf";
 import GuidelineVersionBanner from "@/components/vellum/GuidelineVersionBanner";
 import FindingFeedback from "@/components/vellum/FindingFeedback";
 import { toast } from "sonner";
+import RubricManifestPanel from "@/components/vellum/RubricManifestPanel";
+import { ConfidenceLegend, formatConfidence } from "@/components/vellum/ConfidenceBadge";
+import CriterionFailureKindBadge from "@/components/vellum/CriterionFailureKindBadge";
+import MedReconciliationCompare from "@/components/vellum/MedReconciliationCompare";
 
 function toCSV(rows: Record<string, unknown>[]): string {
   if (!rows.length) return "";
@@ -34,6 +38,8 @@ export default function EvaluationReport() {
   const [analytics, setAnalytics] = useState<{ vendor: string; avg: number; runs: number; criticalRate: number }[]>([]);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [manifest, setManifest] = useState<any>(null);
+  const [sourceText, setSourceText] = useState("");
+  const [noteText, setNoteText] = useState("");
 
   async function reload() {
     if (!id) return;
@@ -73,6 +79,27 @@ export default function EvaluationReport() {
       if (r?.artifact_id) {
         const { data: cl } = await supabase.from("clinical_claims").select("*").eq("artifact_id", r.artifact_id);
         setClaims(cl ?? []);
+        const { data: art } = await supabase
+          .from("note_artifacts")
+          .select("raw_text")
+          .eq("id", r.artifact_id)
+          .maybeSingle();
+        setNoteText(art?.raw_text ?? "");
+      }
+      const { data: srcRows } = await supabase
+        .from("encounter_sources")
+        .select("source_type,content")
+        .eq("encounter_id", id);
+      if (srcRows?.length) {
+        setSourceText(
+          srcRows
+            .map((s: any) => {
+              const c = s.content;
+              const text = typeof c === "string" ? c : c?.text ?? JSON.stringify(c);
+              return `[${s.source_type}]\n${text}`;
+            })
+            .join("\n\n"),
+        );
       }
       const { data: cm } = await supabase.from("rubric_criteria").select("criterion_id, name, domain_id");
       setCriteria(new Map((cm ?? []).map((c: any) => [c.criterion_id, c])));
