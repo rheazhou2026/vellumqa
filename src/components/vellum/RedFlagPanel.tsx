@@ -1,5 +1,6 @@
 import { Flag } from "lucide-react";
 import { EvidenceQuote } from "@/components/vellum/EvidenceTrace";
+import FindingFeedback from "@/components/vellum/FindingFeedback";
 
 const STATUS: Record<string, string> = {
   missed: "border-critical/40 bg-critical/5 text-critical",
@@ -7,7 +8,7 @@ const STATUS: Record<string, string> = {
   not_applicable: "border-border bg-surface text-tertiary",
 };
 
-export default function RedFlagPanel({ findings }: { findings: any[] | null | undefined }) {
+export default function RedFlagPanel({ findings, runId }: { findings: any[] | null | undefined; runId?: string }) {
   if (!findings || findings.length === 0) return null;
   const missed = findings.filter((f) => f.status === "missed");
   const addressed = findings.filter((f) => f.status === "addressed");
@@ -44,6 +45,12 @@ export default function RedFlagPanel({ findings }: { findings: any[] | null | un
                 <EvidenceQuote quote={f.evidence_quote} prefer="source" />
               </div>
             )}
+            <FindingFeedback
+              runId={runId}
+              findingType="red_flag"
+              findingKey={f.flag_id ?? f.label ?? `rf-${i}`}
+              compact
+            />
           </div>
         ))}
         {addressed.length > 0 && (

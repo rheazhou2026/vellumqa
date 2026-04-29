@@ -1,5 +1,6 @@
 import { Lightbulb } from "lucide-react";
 import { EvidenceQuote } from "@/components/vellum/EvidenceTrace";
+import FindingFeedback from "@/components/vellum/FindingFeedback";
 
 const LABELS: Record<string, string> = {
   premature_closure: "Premature closure",
@@ -10,7 +11,7 @@ const LABELS: Record<string, string> = {
   search_satisficing: "Search satisficing",
 };
 
-export default function CognitiveBiasPanel({ biases }: { biases: any[] | null | undefined }) {
+export default function CognitiveBiasPanel({ biases, runId }: { biases: any[] | null | undefined; runId?: string }) {
   if (!biases || biases.length === 0) return null;
   return (
     <section className="vellum-panel">
@@ -36,6 +37,12 @@ export default function CognitiveBiasPanel({ biases }: { biases: any[] | null | 
             {b.remediation && (
               <div className="mt-1.5 text-[11px] text-accent">→ {b.remediation}</div>
             )}
+            <FindingFeedback
+              runId={runId}
+              findingType="cognitive_bias"
+              findingKey={b.bias ?? `bias-${i}`}
+              compact
+            />
           </div>
         ))}
       </div>
