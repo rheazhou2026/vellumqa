@@ -14,336 +14,737 @@ export type Database = {
   }
   public: {
     Tables: {
-      ai_sources: {
+      adjudications: {
         Row: {
-          created_at: string
-          created_by: string | null
-          description: string | null
+          adjudicated_at: string
+          adjudication: string | null
+          assignment_id: string
+          criterion_result_id: string | null
           id: string
-          model_version: string | null
-          name: string
-          updated_at: string
-          vendor: string | null
+          reviewer_id: string
+          reviewer_notes: string | null
         }
         Insert: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
+          adjudicated_at?: string
+          adjudication?: string | null
+          assignment_id: string
+          criterion_result_id?: string | null
           id?: string
-          model_version?: string | null
-          name: string
-          updated_at?: string
-          vendor?: string | null
+          reviewer_id: string
+          reviewer_notes?: string | null
         }
         Update: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
+          adjudicated_at?: string
+          adjudication?: string | null
+          assignment_id?: string
+          criterion_result_id?: string | null
           id?: string
-          model_version?: string | null
-          name?: string
-          updated_at?: string
-          vendor?: string | null
-        }
-        Relationships: []
-      }
-      batch_job_items: {
-        Row: {
-          analysis_id: string | null
-          batch_id: string
-          created_at: string
-          error: string | null
-          id: string
-          note_text: string
-          patient_label: string | null
-          position: number
-          status: Database["public"]["Enums"]["item_status"]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          analysis_id?: string | null
-          batch_id: string
-          created_at?: string
-          error?: string | null
-          id?: string
-          note_text: string
-          patient_label?: string | null
-          position: number
-          status?: Database["public"]["Enums"]["item_status"]
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          analysis_id?: string | null
-          batch_id?: string
-          created_at?: string
-          error?: string | null
-          id?: string
-          note_text?: string
-          patient_label?: string | null
-          position?: number
-          status?: Database["public"]["Enums"]["item_status"]
-          updated_at?: string
-          user_id?: string
+          reviewer_id?: string
+          reviewer_notes?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "batch_job_items_analysis_id_fkey"
-            columns: ["analysis_id"]
+            foreignKeyName: "adjudications_assignment_id_fkey"
+            columns: ["assignment_id"]
             isOneToOne: false
-            referencedRelation: "note_analyses"
+            referencedRelation: "reviewer_assignments"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "batch_job_items_batch_id_fkey"
-            columns: ["batch_id"]
+            foreignKeyName: "adjudications_criterion_result_id_fkey"
+            columns: ["criterion_result_id"]
             isOneToOne: false
-            referencedRelation: "batch_jobs"
+            referencedRelation: "criterion_results"
             referencedColumns: ["id"]
           },
         ]
       }
-      batch_jobs: {
+      audit_events: {
         Row: {
-          aggregate_summary: Json | null
-          ai_source_id: string | null
+          artifact_id: string | null
+          encounter_id: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          occurred_at: string
+          organization_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          artifact_id?: string | null
+          encounter_id?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          occurred_at?: string
+          organization_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          artifact_id?: string | null
+          encounter_id?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          occurred_at?: string
+          organization_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      claim_evidence_links: {
+        Row: {
+          claim_id: string
+          confidence: number | null
+          created_at: string
+          id: string
+          link_type: string | null
+          source_span_id: string | null
+        }
+        Insert: {
+          claim_id: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          link_type?: string | null
+          source_span_id?: string | null
+        }
+        Update: {
+          claim_id?: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          link_type?: string | null
+          source_span_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claim_evidence_links_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "clinical_claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_evidence_links_source_span_id_fkey"
+            columns: ["source_span_id"]
+            isOneToOne: false
+            referencedRelation: "source_spans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clinical_claims: {
+        Row: {
+          artifact_id: string
+          claim_entities: Json | null
+          claim_text: string
+          claim_type: string
+          created_at: string
+          id: string
+          risk_weight: number | null
+          section_id: string | null
+          status: string | null
+        }
+        Insert: {
+          artifact_id: string
+          claim_entities?: Json | null
+          claim_text: string
+          claim_type: string
+          created_at?: string
+          id?: string
+          risk_weight?: number | null
+          section_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          artifact_id?: string
+          claim_entities?: Json | null
+          claim_text?: string
+          claim_type?: string
+          created_at?: string
+          id?: string
+          risk_weight?: number | null
+          section_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_claims_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "note_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clinical_claims_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "note_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      corrective_actions: {
+        Row: {
+          action_type: string | null
+          assigned_to: string | null
           completed_at: string | null
           created_at: string
-          error: string | null
-          failed_items: number
+          description: string | null
           id: string
-          label: string | null
-          processed_items: number
-          status: Database["public"]["Enums"]["batch_status"]
-          total_items: number
-          updated_at: string
-          user_id: string
+          organization_id: string | null
+          status: string
+          triggered_by_event_id: string | null
         }
         Insert: {
-          aggregate_summary?: Json | null
-          ai_source_id?: string | null
+          action_type?: string | null
+          assigned_to?: string | null
           completed_at?: string | null
           created_at?: string
-          error?: string | null
-          failed_items?: number
+          description?: string | null
           id?: string
-          label?: string | null
-          processed_items?: number
-          status?: Database["public"]["Enums"]["batch_status"]
-          total_items?: number
-          updated_at?: string
-          user_id: string
+          organization_id?: string | null
+          status?: string
+          triggered_by_event_id?: string | null
         }
         Update: {
-          aggregate_summary?: Json | null
-          ai_source_id?: string | null
+          action_type?: string | null
+          assigned_to?: string | null
           completed_at?: string | null
           created_at?: string
-          error?: string | null
-          failed_items?: number
+          description?: string | null
           id?: string
-          label?: string | null
-          processed_items?: number
-          status?: Database["public"]["Enums"]["batch_status"]
-          total_items?: number
-          updated_at?: string
-          user_id?: string
+          organization_id?: string | null
+          status?: string
+          triggered_by_event_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "batch_jobs_ai_source_id_fkey"
-            columns: ["ai_source_id"]
+            foreignKeyName: "corrective_actions_organization_id_fkey"
+            columns: ["organization_id"]
             isOneToOne: false
-            referencedRelation: "ai_sources"
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "corrective_actions_triggered_by_event_id_fkey"
+            columns: ["triggered_by_event_id"]
+            isOneToOne: false
+            referencedRelation: "risk_events"
             referencedColumns: ["id"]
           },
         ]
       }
-      clinical_guidelines: {
+      criterion_results: {
         Row: {
-          active: boolean
-          citation: string | null
-          condition_keywords: string[]
+          applicability: string | null
+          confidence: number | null
           created_at: string
-          created_by: string | null
+          criterion_id: string | null
+          evaluation_run_id: string
+          evidence: Json | null
+          explanation: string | null
           id: string
-          name: string
-          organization: string
-          recommendations: string
-          red_flags: string | null
-          specialty: string
-          summary: string
-          updated_at: string
+          requires_human_adjudication: boolean
+          result: string | null
+          review_action: string | null
+          score_delta: number | null
+          severity: string | null
         }
         Insert: {
-          active?: boolean
-          citation?: string | null
-          condition_keywords?: string[]
+          applicability?: string | null
+          confidence?: number | null
           created_at?: string
-          created_by?: string | null
+          criterion_id?: string | null
+          evaluation_run_id: string
+          evidence?: Json | null
+          explanation?: string | null
           id?: string
-          name: string
-          organization: string
-          recommendations: string
-          red_flags?: string | null
-          specialty: string
-          summary: string
-          updated_at?: string
+          requires_human_adjudication?: boolean
+          result?: string | null
+          review_action?: string | null
+          score_delta?: number | null
+          severity?: string | null
         }
         Update: {
-          active?: boolean
-          citation?: string | null
-          condition_keywords?: string[]
+          applicability?: string | null
+          confidence?: number | null
           created_at?: string
-          created_by?: string | null
+          criterion_id?: string | null
+          evaluation_run_id?: string
+          evidence?: Json | null
+          explanation?: string | null
           id?: string
-          name?: string
-          organization?: string
-          recommendations?: string
-          red_flags?: string | null
-          specialty?: string
-          summary?: string
-          updated_at?: string
+          requires_human_adjudication?: boolean
+          result?: string | null
+          review_action?: string | null
+          score_delta?: number | null
+          severity?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "criterion_results_criterion_id_fkey"
+            columns: ["criterion_id"]
+            isOneToOne: false
+            referencedRelation: "rubric_criteria"
+            referencedColumns: ["criterion_id"]
+          },
+          {
+            foreignKeyName: "criterion_results_evaluation_run_id_fkey"
+            columns: ["evaluation_run_id"]
+            isOneToOne: false
+            referencedRelation: "evaluation_runs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
-      clinical_notes: {
+      drift_metrics: {
         Row: {
-          ai_source_id: string | null
+          ai_model_version: string | null
+          ai_vendor: string | null
+          avg_trust_score: number | null
+          created_at: string
+          critical_failure_rate: number | null
+          hallucination_rate: number | null
+          id: string
+          metric_date: string
+          omission_rate: number | null
+          organization_id: string | null
+          sample_size: number | null
+          site_id: string | null
+          specialty: string | null
+        }
+        Insert: {
+          ai_model_version?: string | null
+          ai_vendor?: string | null
+          avg_trust_score?: number | null
+          created_at?: string
+          critical_failure_rate?: number | null
+          hallucination_rate?: number | null
+          id?: string
+          metric_date: string
+          omission_rate?: number | null
+          organization_id?: string | null
+          sample_size?: number | null
+          site_id?: string | null
+          specialty?: string | null
+        }
+        Update: {
+          ai_model_version?: string | null
+          ai_vendor?: string | null
+          avg_trust_score?: number | null
+          created_at?: string
+          critical_failure_rate?: number | null
+          hallucination_rate?: number | null
+          id?: string
+          metric_date?: string
+          omission_rate?: number | null
+          organization_id?: string | null
+          sample_size?: number | null
+          site_id?: string | null
+          specialty?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drift_metrics_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      encounter_sources: {
+        Row: {
+          content: Json
+          created_at: string
+          encounter_id: string
+          id: string
+          metadata: Json | null
+          source_type: string
+        }
+        Insert: {
+          content: Json
+          created_at?: string
+          encounter_id: string
+          id?: string
+          metadata?: Json | null
+          source_type: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          encounter_id?: string
+          id?: string
+          metadata?: Json | null
+          source_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "encounter_sources_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      encounters: {
+        Row: {
+          ai_model_version: string | null
+          ai_vendor: string | null
+          care_setting: string
           chief_complaint: string | null
           created_at: string
+          encounter_date: string
           id: string
-          note_text: string
-          patient_label: string | null
-          source_metadata: Json | null
-          specialty: string | null
+          organization_id: string | null
+          patient_age_group: string | null
+          patient_id: string | null
+          patient_risk_flags: Json | null
+          site_id: string | null
+          specialty: string
           user_id: string
+          visit_type: string | null
+          workflow_metadata: Json | null
         }
         Insert: {
-          ai_source_id?: string | null
+          ai_model_version?: string | null
+          ai_vendor?: string | null
+          care_setting: string
           chief_complaint?: string | null
           created_at?: string
+          encounter_date?: string
           id?: string
-          note_text: string
-          patient_label?: string | null
-          source_metadata?: Json | null
-          specialty?: string | null
+          organization_id?: string | null
+          patient_age_group?: string | null
+          patient_id?: string | null
+          patient_risk_flags?: Json | null
+          site_id?: string | null
+          specialty: string
           user_id: string
+          visit_type?: string | null
+          workflow_metadata?: Json | null
         }
         Update: {
-          ai_source_id?: string | null
+          ai_model_version?: string | null
+          ai_vendor?: string | null
+          care_setting?: string
           chief_complaint?: string | null
           created_at?: string
+          encounter_date?: string
           id?: string
-          note_text?: string
-          patient_label?: string | null
-          source_metadata?: Json | null
-          specialty?: string | null
+          organization_id?: string | null
+          patient_age_group?: string | null
+          patient_id?: string | null
+          patient_risk_flags?: Json | null
+          site_id?: string | null
+          specialty?: string
           user_id?: string
+          visit_type?: string | null
+          workflow_metadata?: Json | null
         }
         Relationships: [
           {
-            foreignKeyName: "clinical_notes_ai_source_id_fkey"
-            columns: ["ai_source_id"]
+            foreignKeyName: "encounters_organization_id_fkey"
+            columns: ["organization_id"]
             isOneToOne: false
-            referencedRelation: "ai_sources"
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "encounters_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
             referencedColumns: ["id"]
           },
         ]
       }
-      note_analyses: {
+      evaluation_runs: {
         Row: {
-          accuracy_score: number | null
-          ai_source_id: string | null
-          clinical_reasoning: Json | null
-          cognitive_biases: Json | null
-          completeness_score: number | null
-          created_at: string
-          gold_standard: Json | null
-          guideline_references: Json | null
+          artifact_id: string | null
+          auto_escalated: boolean
+          completed_at: string
+          critical_failures: string[] | null
+          differential_integrity_score: number | null
+          encounter_id: string
+          evaluator_confidence: number | null
+          guideline_concordance_score: number | null
           id: string
-          issues: Json | null
-          model_used: string | null
-          note_id: string
-          overall_trust_score: number | null
-          pattern_matches: Json | null
-          raw_response: Json | null
-          reasoning_rating: string | null
-          reasoning_score: number | null
-          recognized_pattern: string | null
-          red_flags: Json | null
-          risk_impact: Json | null
-          safety_score: number | null
-          top_clinical_risk: string | null
-          user_id: string
+          manifest_id: string | null
+          medico_legal_exposure_score: number | null
+          omission_hazard_score: number | null
+          patient_safety_escalation_score: number | null
+          reviewability_index: number | null
+          source_faithfulness_index: number | null
+          trust_score: number | null
+          uncertainty_calibration_score: number | null
         }
         Insert: {
-          accuracy_score?: number | null
-          ai_source_id?: string | null
-          clinical_reasoning?: Json | null
-          cognitive_biases?: Json | null
-          completeness_score?: number | null
-          created_at?: string
-          gold_standard?: Json | null
-          guideline_references?: Json | null
+          artifact_id?: string | null
+          auto_escalated?: boolean
+          completed_at?: string
+          critical_failures?: string[] | null
+          differential_integrity_score?: number | null
+          encounter_id: string
+          evaluator_confidence?: number | null
+          guideline_concordance_score?: number | null
           id?: string
-          issues?: Json | null
-          model_used?: string | null
-          note_id: string
-          overall_trust_score?: number | null
-          pattern_matches?: Json | null
-          raw_response?: Json | null
-          reasoning_rating?: string | null
-          reasoning_score?: number | null
-          recognized_pattern?: string | null
-          red_flags?: Json | null
-          risk_impact?: Json | null
-          safety_score?: number | null
-          top_clinical_risk?: string | null
-          user_id: string
+          manifest_id?: string | null
+          medico_legal_exposure_score?: number | null
+          omission_hazard_score?: number | null
+          patient_safety_escalation_score?: number | null
+          reviewability_index?: number | null
+          source_faithfulness_index?: number | null
+          trust_score?: number | null
+          uncertainty_calibration_score?: number | null
         }
         Update: {
-          accuracy_score?: number | null
-          ai_source_id?: string | null
-          clinical_reasoning?: Json | null
-          cognitive_biases?: Json | null
-          completeness_score?: number | null
-          created_at?: string
-          gold_standard?: Json | null
-          guideline_references?: Json | null
+          artifact_id?: string | null
+          auto_escalated?: boolean
+          completed_at?: string
+          critical_failures?: string[] | null
+          differential_integrity_score?: number | null
+          encounter_id?: string
+          evaluator_confidence?: number | null
+          guideline_concordance_score?: number | null
           id?: string
-          issues?: Json | null
-          model_used?: string | null
-          note_id?: string
-          overall_trust_score?: number | null
-          pattern_matches?: Json | null
-          raw_response?: Json | null
-          reasoning_rating?: string | null
-          reasoning_score?: number | null
-          recognized_pattern?: string | null
-          red_flags?: Json | null
-          risk_impact?: Json | null
-          safety_score?: number | null
-          top_clinical_risk?: string | null
-          user_id?: string
+          manifest_id?: string | null
+          medico_legal_exposure_score?: number | null
+          omission_hazard_score?: number | null
+          patient_safety_escalation_score?: number | null
+          reviewability_index?: number | null
+          source_faithfulness_index?: number | null
+          trust_score?: number | null
+          uncertainty_calibration_score?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "note_analyses_ai_source_id_fkey"
-            columns: ["ai_source_id"]
+            foreignKeyName: "evaluation_runs_artifact_id_fkey"
+            columns: ["artifact_id"]
             isOneToOne: false
-            referencedRelation: "ai_sources"
+            referencedRelation: "note_artifacts"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "note_analyses_note_id_fkey"
-            columns: ["note_id"]
+            foreignKeyName: "evaluation_runs_encounter_id_fkey"
+            columns: ["encounter_id"]
             isOneToOne: false
-            referencedRelation: "clinical_notes"
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluation_runs_manifest_id_fkey"
+            columns: ["manifest_id"]
+            isOneToOne: false
+            referencedRelation: "rubric_load_manifests"
             referencedColumns: ["id"]
           },
         ]
+      }
+      guideline_sources: {
+        Row: {
+          abbreviation: string | null
+          active: boolean
+          created_at: string
+          id: string
+          name: string
+          organization_id: string | null
+          source_type: string | null
+          source_url: string | null
+          specialty: string | null
+        }
+        Insert: {
+          abbreviation?: string | null
+          active?: boolean
+          created_at?: string
+          id?: string
+          name: string
+          organization_id?: string | null
+          source_type?: string | null
+          source_url?: string | null
+          specialty?: string | null
+        }
+        Update: {
+          abbreviation?: string | null
+          active?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string | null
+          source_type?: string | null
+          source_url?: string | null
+          specialty?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guideline_sources_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guideline_versions: {
+        Row: {
+          change_summary: string | null
+          created_at: string
+          effective_date: string | null
+          id: string
+          is_current: boolean
+          retired_date: string | null
+          source_id: string
+          version_string: string
+        }
+        Insert: {
+          change_summary?: string | null
+          created_at?: string
+          effective_date?: string | null
+          id?: string
+          is_current?: boolean
+          retired_date?: string | null
+          source_id: string
+          version_string: string
+        }
+        Update: {
+          change_summary?: string | null
+          created_at?: string
+          effective_date?: string | null
+          id?: string
+          is_current?: boolean
+          retired_date?: string | null
+          source_id?: string
+          version_string?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guideline_versions_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "guideline_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      note_artifacts: {
+        Row: {
+          artifact_type: string
+          content: Json
+          created_at: string
+          encounter_id: string
+          generation_metadata: Json | null
+          id: string
+          raw_text: string | null
+          status: string
+        }
+        Insert: {
+          artifact_type: string
+          content: Json
+          created_at?: string
+          encounter_id: string
+          generation_metadata?: Json | null
+          id?: string
+          raw_text?: string | null
+          status?: string
+        }
+        Update: {
+          artifact_type?: string
+          content?: Json
+          created_at?: string
+          encounter_id?: string
+          generation_metadata?: Json | null
+          id?: string
+          raw_text?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_artifacts_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      note_sections: {
+        Row: {
+          artifact_id: string
+          content: string
+          created_at: string
+          id: string
+          section_order: number | null
+          section_type: string
+        }
+        Insert: {
+          artifact_id: string
+          content: string
+          created_at?: string
+          id?: string
+          section_order?: number | null
+          section_type: string
+        }
+        Update: {
+          artifact_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          section_order?: number | null
+          section_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_sections_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "note_artifacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          compliance_settings: Json | null
+          created_at: string
+          guideline_profile: Json | null
+          id: string
+          jurisdiction: string | null
+          name: string
+          slug: string
+          state_jurisdiction: string | null
+        }
+        Insert: {
+          compliance_settings?: Json | null
+          created_at?: string
+          guideline_profile?: Json | null
+          id?: string
+          jurisdiction?: string | null
+          name: string
+          slug: string
+          state_jurisdiction?: string | null
+        }
+        Update: {
+          compliance_settings?: Json | null
+          created_at?: string
+          guideline_profile?: Json | null
+          id?: string
+          jurisdiction?: string | null
+          name?: string
+          slug?: string
+          state_jurisdiction?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -375,6 +776,339 @@ export type Database = {
         }
         Relationships: []
       }
+      reviewer_assignments: {
+        Row: {
+          artifact_id: string | null
+          assigned_by: string | null
+          completed_at: string | null
+          created_at: string
+          due_at: string | null
+          encounter_id: string
+          id: string
+          priority: string | null
+          reviewer_id: string
+          status: string
+        }
+        Insert: {
+          artifact_id?: string | null
+          assigned_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_at?: string | null
+          encounter_id: string
+          id?: string
+          priority?: string | null
+          reviewer_id: string
+          status?: string
+        }
+        Update: {
+          artifact_id?: string | null
+          assigned_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_at?: string | null
+          encounter_id?: string
+          id?: string
+          priority?: string | null
+          reviewer_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviewer_assignments_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "note_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviewer_assignments_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      risk_events: {
+        Row: {
+          action_taken: string | null
+          affected_claims: Json | null
+          created_at: string
+          description: string | null
+          encounter_id: string | null
+          evaluation_run_id: string | null
+          event_type: string
+          id: string
+          resolved: boolean
+          severity: string
+          user_id: string
+        }
+        Insert: {
+          action_taken?: string | null
+          affected_claims?: Json | null
+          created_at?: string
+          description?: string | null
+          encounter_id?: string | null
+          evaluation_run_id?: string | null
+          event_type: string
+          id?: string
+          resolved?: boolean
+          severity: string
+          user_id: string
+        }
+        Update: {
+          action_taken?: string | null
+          affected_claims?: Json | null
+          created_at?: string
+          description?: string | null
+          encounter_id?: string | null
+          evaluation_run_id?: string | null
+          event_type?: string
+          id?: string
+          resolved?: boolean
+          severity?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "risk_events_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "risk_events_evaluation_run_id_fkey"
+            columns: ["evaluation_run_id"]
+            isOneToOne: false
+            referencedRelation: "evaluation_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rubric_criteria: {
+        Row: {
+          artifact_types: string[] | null
+          created_at: string
+          criterion_id: string
+          critical_failure_possible: boolean
+          domain_id: string | null
+          effective_date: string | null
+          evidence_requirements: Json | null
+          explainability_template: string | null
+          id: string
+          name: string
+          review_action: Json | null
+          scoring: Json | null
+          severity_level: string | null
+          specialty_modules: string[] | null
+          trigger_logic: Json | null
+          version: string | null
+        }
+        Insert: {
+          artifact_types?: string[] | null
+          created_at?: string
+          criterion_id: string
+          critical_failure_possible?: boolean
+          domain_id?: string | null
+          effective_date?: string | null
+          evidence_requirements?: Json | null
+          explainability_template?: string | null
+          id?: string
+          name: string
+          review_action?: Json | null
+          scoring?: Json | null
+          severity_level?: string | null
+          specialty_modules?: string[] | null
+          trigger_logic?: Json | null
+          version?: string | null
+        }
+        Update: {
+          artifact_types?: string[] | null
+          created_at?: string
+          criterion_id?: string
+          critical_failure_possible?: boolean
+          domain_id?: string | null
+          effective_date?: string | null
+          evidence_requirements?: Json | null
+          explainability_template?: string | null
+          id?: string
+          name?: string
+          review_action?: Json | null
+          scoring?: Json | null
+          severity_level?: string | null
+          specialty_modules?: string[] | null
+          trigger_logic?: Json | null
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rubric_criteria_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "rubric_domains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rubric_domains: {
+        Row: {
+          core_question: string | null
+          created_at: string
+          display_order: number | null
+          domain_code: string
+          id: string
+          main_failure_type: string | null
+          name: string
+        }
+        Insert: {
+          core_question?: string | null
+          created_at?: string
+          display_order?: number | null
+          domain_code: string
+          id?: string
+          main_failure_type?: string | null
+          name: string
+        }
+        Update: {
+          core_question?: string | null
+          created_at?: string
+          display_order?: number | null
+          domain_code?: string
+          id?: string
+          main_failure_type?: string | null
+          name?: string
+        }
+        Relationships: []
+      }
+      rubric_load_manifests: {
+        Row: {
+          assembled_at: string
+          encounter_id: string
+          excluded_modules: Json | null
+          guideline_versions: Json | null
+          id: string
+          loaded_modules: string[] | null
+        }
+        Insert: {
+          assembled_at?: string
+          encounter_id: string
+          excluded_modules?: Json | null
+          guideline_versions?: Json | null
+          id?: string
+          loaded_modules?: string[] | null
+        }
+        Update: {
+          assembled_at?: string
+          encounter_id?: string
+          excluded_modules?: Json | null
+          guideline_versions?: Json | null
+          id?: string
+          loaded_modules?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rubric_load_manifests_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sites: {
+        Row: {
+          created_at: string
+          guideline_overrides: Json | null
+          id: string
+          local_policy: Json | null
+          name: string
+          organization_id: string
+          site_type: string
+          specialty_config: Json | null
+        }
+        Insert: {
+          created_at?: string
+          guideline_overrides?: Json | null
+          id?: string
+          local_policy?: Json | null
+          name: string
+          organization_id: string
+          site_type: string
+          specialty_config?: Json | null
+        }
+        Update: {
+          created_at?: string
+          guideline_overrides?: Json | null
+          id?: string
+          local_policy?: Json | null
+          name?: string
+          organization_id?: string
+          site_type?: string
+          specialty_config?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sites_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      source_spans: {
+        Row: {
+          created_at: string
+          encounter_id: string
+          end_time: string | null
+          id: string
+          source_id: string
+          span_tags: Json | null
+          speaker: string | null
+          start_time: string | null
+          text_content: string
+        }
+        Insert: {
+          created_at?: string
+          encounter_id: string
+          end_time?: string | null
+          id?: string
+          source_id: string
+          span_tags?: Json | null
+          speaker?: string | null
+          start_time?: string | null
+          text_content: string
+        }
+        Update: {
+          created_at?: string
+          encounter_id?: string
+          end_time?: string | null
+          id?: string
+          source_id?: string
+          span_tags?: Json | null
+          speaker?: string | null
+          start_time?: string | null
+          text_content?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "source_spans_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "encounters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "source_spans_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "encounter_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -396,6 +1130,57 @@ export type Database = {
         }
         Relationships: []
       }
+      vellum_users: {
+        Row: {
+          created_at: string
+          credentials: string | null
+          display_name: string | null
+          id: string
+          organization_id: string | null
+          site_id: string | null
+          specialty: string | null
+          user_id: string
+          vellum_role: string
+        }
+        Insert: {
+          created_at?: string
+          credentials?: string | null
+          display_name?: string | null
+          id?: string
+          organization_id?: string | null
+          site_id?: string | null
+          specialty?: string | null
+          user_id: string
+          vellum_role?: string
+        }
+        Update: {
+          created_at?: string
+          credentials?: string | null
+          display_name?: string | null
+          id?: string
+          organization_id?: string | null
+          site_id?: string | null
+          specialty?: string | null
+          user_id?: string
+          vellum_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vellum_users_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vellum_users_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -411,8 +1196,6 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "reviewer" | "viewer"
-      batch_status: "pending" | "processing" | "completed" | "failed"
-      item_status: "queued" | "processing" | "done" | "error"
       severity_level: "critical" | "important" | "minor" | "info"
     }
     CompositeTypes: {
@@ -542,8 +1325,6 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "reviewer", "viewer"],
-      batch_status: ["pending", "processing", "completed", "failed"],
-      item_status: ["queued", "processing", "done", "error"],
       severity_level: ["critical", "important", "minor", "info"],
     },
   },
