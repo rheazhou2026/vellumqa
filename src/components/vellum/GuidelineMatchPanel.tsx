@@ -1,4 +1,5 @@
 import { BookOpen } from "lucide-react";
+import { EvidenceQuote } from "@/components/vellum/EvidenceTrace";
 
 const STATUS: Record<string, { tone: string; label: string }> = {
   aligned: { tone: "text-pass border-pass/40 bg-pass/5", label: "ALIGNED" },
@@ -39,8 +40,8 @@ export default function GuidelineMatchPanel({ matches }: { matches: any[] | null
                       <span className="font-mono text-[9px]">{s.label}</span>
                     </div>
                     {m.evidence_quote && (
-                      <div className="mt-1.5 text-[11px] italic text-muted-foreground border-l-2 border-current/30 pl-2">
-                        "{m.evidence_quote}"
+                      <div className="mt-1.5 text-[11px]">
+                        <EvidenceQuote quote={m.evidence_quote} prefer="note" />
                       </div>
                     )}
                     {m.suggestion && (

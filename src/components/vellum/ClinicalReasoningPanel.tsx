@@ -1,4 +1,5 @@
 import { CheckCircle2, AlertTriangle, Brain } from "lucide-react";
+import { EvidenceQuote } from "@/components/vellum/EvidenceTrace";
 
 const QUALITY_TONE: Record<string, string> = {
   excellent: "text-pass border-pass/40 bg-pass/5",
@@ -48,7 +49,9 @@ export default function ClinicalReasoningPanel({ run }: { run: any }) {
                 <div className="font-heading text-xs text-foreground">{s.title}</div>
                 <div className="text-[11px] text-muted-foreground mt-0.5">{s.detail}</div>
                 {s.evidence_quote && (
-                  <div className="mt-1 text-[11px] italic text-muted-foreground/80">"{s.evidence_quote}"</div>
+                  <div className="mt-1 text-[11px]">
+                    <EvidenceQuote quote={s.evidence_quote} prefer="note" />
+                  </div>
                 )}
               </li>
             ))}
@@ -70,6 +73,11 @@ export default function ClinicalReasoningPanel({ run }: { run: any }) {
                 <div className="text-[11px] text-foreground/80 mt-1">{g.detail}</div>
                 {g.suggestion && (
                   <div className="mt-1.5 text-[11px] text-accent">→ {g.suggestion}</div>
+                )}
+                {g.evidence_quote && (
+                  <div className="mt-1.5 text-[11px]">
+                    <EvidenceQuote quote={g.evidence_quote} prefer="note" />
+                  </div>
                 )}
               </li>
             ))}

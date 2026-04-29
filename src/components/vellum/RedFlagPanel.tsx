@@ -1,4 +1,5 @@
 import { Flag } from "lucide-react";
+import { EvidenceQuote } from "@/components/vellum/EvidenceTrace";
 
 const STATUS: Record<string, string> = {
   missed: "border-critical/40 bg-critical/5 text-critical",
@@ -36,6 +37,11 @@ export default function RedFlagPanel({ findings }: { findings: any[] | null | un
             {f.suggested_addition && (
               <div className="mt-1.5 text-[11px] text-accent">
                 → Suggested note addition: <span className="text-foreground/90 italic">"{f.suggested_addition}"</span>
+              </div>
+            )}
+            {f.evidence_quote && (
+              <div className="mt-1.5 text-[11px]">
+                <EvidenceQuote quote={f.evidence_quote} prefer="source" />
               </div>
             )}
           </div>

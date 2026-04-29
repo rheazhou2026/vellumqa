@@ -1,4 +1,5 @@
 import { Lightbulb } from "lucide-react";
+import { EvidenceQuote } from "@/components/vellum/EvidenceTrace";
 
 const LABELS: Record<string, string> = {
   premature_closure: "Premature closure",
@@ -28,8 +29,8 @@ export default function CognitiveBiasPanel({ biases }: { biases: any[] | null | 
             <div className="font-heading text-xs text-foreground">{LABELS[b.bias] ?? b.bias}</div>
             <div className="text-[11px] text-foreground/80 mt-1">{b.explanation}</div>
             {b.evidence_quote && (
-              <div className="mt-1.5 text-[11px] italic text-muted-foreground border-l-2 border-high/40 pl-2">
-                "{b.evidence_quote}"
+              <div className="mt-1.5 text-[11px]">
+                <EvidenceQuote quote={b.evidence_quote} prefer="note" />
               </div>
             )}
             {b.remediation && (
