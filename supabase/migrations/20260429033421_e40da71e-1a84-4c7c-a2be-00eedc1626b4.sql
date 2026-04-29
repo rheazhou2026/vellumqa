@@ -1,0 +1,1 @@
+ALTER VIEW public.finding_feedback_stats SET (security_invoker = on);
