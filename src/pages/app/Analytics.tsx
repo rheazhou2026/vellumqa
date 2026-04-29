@@ -6,6 +6,7 @@ import {
   BarChart, Bar,
 } from "recharts";
 import DomainRadar from "@/components/vellum/DomainRadar";
+import SpecialtyPerformance from "@/components/vellum/SpecialtyPerformance";
 
 const COLORS = ["hsl(var(--accent))", "hsl(var(--pass))", "hsl(var(--moderate))", "hsl(var(--high))", "hsl(var(--critical))"];
 
@@ -157,6 +158,9 @@ export default function Analytics() {
 
         {/* Domain Score Radar */}
         <DomainRadar />
+
+        {/* Specialty Performance */}
+        <SpecialtyPerformance />
 
         {/* Trust over time */}
         <section className="vellum-panel p-5">
