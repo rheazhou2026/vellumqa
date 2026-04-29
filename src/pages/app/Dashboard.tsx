@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import PageHeader from "@/components/vellum/PageHeader";
 import StubPanel from "@/components/vellum/StubPanel";
+import DomainRadar from "@/components/vellum/DomainRadar";
+import SpecialtyPerformance from "@/components/vellum/SpecialtyPerformance";
 import { AlertTriangle, Activity, FileCheck2, AlertOctagon, CircleSlash } from "lucide-react";
 
 type Kpi = { label: string; value: string; trend?: string; icon: React.ComponentType<{ className?: string }>; tone?: "default" | "critical" | "high" | "moderate" | "pass" };
