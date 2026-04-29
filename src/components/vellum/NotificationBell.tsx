@@ -50,7 +50,24 @@ export default function NotificationBell() {
         .eq("user_id", uid)
         .order("created_at", { ascending: false })
         .limit(25);
-      setItems((rows as Notification[]) ?? []);
+      const list = (rows as Notification[]) ?? [];
+      if (list.length === 0) {
+        // First-run seed so the bell is demoable immediately.
+        const seed = [
+          {
+            user_id: uid,
+            notification_type: "review_assigned",
+            severity: "urgent",
+            title: "Welcome to Vellum",
+            message: "New review assignments and critical risk events will appear here in real time.",
+            link_path: "/review",
+          },
+        ];
+        const { data: inserted } = await supabase.from("notifications").insert(seed).select("*");
+        setItems((inserted as Notification[]) ?? []);
+      } else {
+        setItems(list);
+      }
     })();
   }, []);
 
