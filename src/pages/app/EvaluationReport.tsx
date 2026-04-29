@@ -264,7 +264,6 @@ export default function EvaluationReport() {
             onReran={reload}
           />
         )}
-        {run && <GuidelineMatchPanel matches={run.guideline_matches} runId={run.id} />}
         {manifest && (
           <section className="vellum-panel p-4">
             <div className="font-mono text-[10px] uppercase tracking-widest text-tertiary mb-2">
@@ -288,6 +287,7 @@ export default function EvaluationReport() {
             </div>
           </section>
         )}
+        {run && <GuidelineMatchPanel matches={run.guideline_matches} runId={run.id} />}
         {run && <RedFlagPanel findings={run.red_flag_findings} runId={run.id} />}
         {run && <CognitiveBiasPanel biases={run.cognitive_biases} runId={run.id} />}
 
