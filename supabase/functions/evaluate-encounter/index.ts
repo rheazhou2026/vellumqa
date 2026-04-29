@@ -548,7 +548,29 @@ Deno.serve(async (req) => {
     }
 
     // ---- Persist ----
-    const claimRows = (claimsOut ?? []).map((c: any) => ({
+    // Deduplicate claims: same normalized (claim_type, claim_text) collapses
+    // to one row, keeping the worst status and highest risk_weight. The
+    // extractor sometimes emits the same claim twice when it appears in
+    // multiple note sections.
+    const STATUS_RANK: Record<string, number> = {
+      contradicted: 4, unsupported: 3, uncertain: 2, supported: 1,
+    };
+    const dedupMap = new Map<string, any>();
+    for (const c of (claimsOut ?? [])) {
+      const text = String(c.claim_text ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+      const type = String(c.claim_type ?? "").trim().toLowerCase();
+      if (!text) continue;
+      const key = `${type}::${text}`;
+      const existing = dedupMap.get(key);
+      if (!existing) {
+        dedupMap.set(key, { ...c });
+      } else {
+        if ((STATUS_RANK[c.status] ?? 0) > (STATUS_RANK[existing.status] ?? 0)) existing.status = c.status;
+        if ((c.risk_weight ?? 0) > (existing.risk_weight ?? 0)) existing.risk_weight = c.risk_weight;
+        if (c.evidence_quote && !existing.evidence_quote) existing.evidence_quote = c.evidence_quote;
+      }
+    }
+    const claimRows = Array.from(dedupMap.values()).map((c: any) => ({
       artifact_id: artifact.id,
       claim_text: String(c.claim_text).slice(0, 2000),
       claim_type: c.claim_type,
