@@ -482,6 +482,7 @@ export type Database = {
           evaluator_confidence: number | null
           guideline_concordance_score: number | null
           guideline_matches: Json | null
+          guideline_versions_used: Json
           id: string
           manifest_id: string | null
           medico_legal_exposure_score: number | null
@@ -508,6 +509,7 @@ export type Database = {
           evaluator_confidence?: number | null
           guideline_concordance_score?: number | null
           guideline_matches?: Json | null
+          guideline_versions_used?: Json
           id?: string
           manifest_id?: string | null
           medico_legal_exposure_score?: number | null
@@ -534,6 +536,7 @@ export type Database = {
           evaluator_confidence?: number | null
           guideline_concordance_score?: number | null
           guideline_matches?: Json | null
+          guideline_versions_used?: Json
           id?: string
           manifest_id?: string | null
           medico_legal_exposure_score?: number | null
@@ -572,6 +575,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      finding_feedback: {
+        Row: {
+          created_at: string
+          evaluation_run_id: string
+          explanation: string | null
+          finding_key: string
+          finding_type: string
+          id: string
+          reviewer_id: string
+          updated_at: string
+          verdict: string
+        }
+        Insert: {
+          created_at?: string
+          evaluation_run_id: string
+          explanation?: string | null
+          finding_key: string
+          finding_type: string
+          id?: string
+          reviewer_id: string
+          updated_at?: string
+          verdict: string
+        }
+        Update: {
+          created_at?: string
+          evaluation_run_id?: string
+          explanation?: string | null
+          finding_key?: string
+          finding_type?: string
+          id?: string
+          reviewer_id?: string
+          updated_at?: string
+          verdict?: string
+        }
+        Relationships: []
       }
       guideline_sources: {
         Row: {
@@ -1210,7 +1249,17 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      finding_feedback_stats: {
+        Row: {
+          confirmed_count: number | null
+          false_positive_rate: number | null
+          finding_type: string | null
+          partial_count: number | null
+          rejected_count: number | null
+          total_feedback: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
