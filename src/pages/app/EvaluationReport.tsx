@@ -33,6 +33,7 @@ export default function EvaluationReport() {
   const [domains, setDomains] = useState<Record<string, string>>({});
   const [analytics, setAnalytics] = useState<{ vendor: string; avg: number; runs: number; criticalRate: number }[]>([]);
   const [pdfBusy, setPdfBusy] = useState(false);
+  const [manifest, setManifest] = useState<any>(null);
 
   async function reload() {
     if (!id) return;
@@ -60,6 +61,14 @@ export default function EvaluationReport() {
       if (r) {
         const { data: cr } = await supabase.from("criterion_results").select("*").eq("evaluation_run_id", r.id);
         setResults(cr ?? []);
+        if (r.manifest_id) {
+          const { data: m } = await supabase
+            .from("rubric_load_manifests")
+            .select("*")
+            .eq("id", r.manifest_id)
+            .maybeSingle();
+          setManifest(m);
+        }
       }
       if (r?.artifact_id) {
         const { data: cl } = await supabase.from("clinical_claims").select("*").eq("artifact_id", r.artifact_id);
@@ -208,24 +217,41 @@ export default function EvaluationReport() {
         {/* Sub-scores */}
         {run && (
           <section className="vellum-panel p-6">
-            <div className="font-mono text-[10px] uppercase tracking-widest text-tertiary mb-3">Domain sub-scores</div>
+            <div className="font-mono text-[10px] uppercase tracking-widest text-tertiary mb-3 flex items-center justify-between">
+              <span>Domain sub-scores</span>
+              <span className="normal-case tracking-normal text-[10px] text-muted-foreground font-mono">
+                <span className="text-pass">↑ better</span> · <span className="text-critical">↑ worse</span> for hazard rows
+              </span>
+            </div>
             <div className="grid grid-cols-3 gap-3">
               {[
-                ["Source faithfulness", run.source_faithfulness_index],
-                ["Differential integrity", run.differential_integrity_score],
-                ["Guideline concordance", run.guideline_concordance_score],
-                ["Omission hazard", run.omission_hazard_score],
-                ["Patient-safety escalation", run.patient_safety_escalation_score],
-                ["Uncertainty calibration", run.uncertainty_calibration_score],
-                ["Medico-legal exposure", run.medico_legal_exposure_score],
-                ["Reviewability", run.reviewability_index],
-                ["Evaluator confidence", run.evaluator_confidence],
-              ].map(([label, val]: any) => (
-                <div key={label} className="border border-border rounded-sm p-3 bg-surface">
-                  <div className="text-[10px] uppercase tracking-wider text-tertiary">{label}</div>
-                  <div className="font-display text-2xl mt-1">{val != null ? Math.round(val * 10) / 10 : "—"}</div>
-                </div>
-              ))}
+                { label: "Source faithfulness", val: run.source_faithfulness_index, dir: "up" },
+                { label: "Differential integrity", val: run.differential_integrity_score, dir: "up" },
+                { label: "Guideline concordance", val: run.guideline_concordance_score, dir: "up" },
+                { label: "Omission hazard", val: run.omission_hazard_score, dir: "down" },
+                { label: "Patient-safety escalation", val: run.patient_safety_escalation_score, dir: "down" },
+                { label: "Uncertainty calibration", val: run.uncertainty_calibration_score, dir: "up" },
+                { label: "Medico-legal exposure", val: run.medico_legal_exposure_score, dir: "down" },
+                { label: "Reviewability", val: run.reviewability_index, dir: "up" },
+                { label: "Evaluator confidence", val: run.evaluator_confidence, dir: "up", pct: true },
+              ].map(({ label, val, dir, pct }: any) => {
+                const display = val == null
+                  ? "—"
+                  : pct
+                    ? `${Math.round((val <= 1 ? val * 100 : val))}%`
+                    : Math.round(val * 10) / 10;
+                return (
+                  <div key={label} className="border border-border rounded-sm p-3 bg-surface">
+                    <div className="text-[10px] uppercase tracking-wider text-tertiary flex items-center justify-between">
+                      <span>{label}</span>
+                      <span className={dir === "down" ? "text-critical" : "text-pass"} title={dir === "down" ? "Higher = worse" : "Higher = better"}>
+                        {dir === "down" ? "↑ worse" : "↑ better"}
+                      </span>
+                    </div>
+                    <div className="font-display text-2xl mt-1">{display}</div>
+                  </div>
+                );
+              })}
             </div>
           </section>
         )}
@@ -237,6 +263,29 @@ export default function EvaluationReport() {
             used={(run.guideline_versions_used as any[]) ?? []}
             onReran={reload}
           />
+        )}
+        {manifest && (
+          <section className="vellum-panel p-4">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-tertiary mb-2">
+              Rubric load manifest · scoped to chief complaint
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-[11px]">
+              <div>
+                <div className="text-pass font-mono text-[10px] uppercase tracking-wider mb-1">Loaded</div>
+                <ul className="space-y-0.5 text-foreground/90">
+                  {(manifest.loaded_modules ?? []).map((m: string) => <li key={m}>· {m}</li>)}
+                  {!(manifest.loaded_modules ?? []).length && <li className="text-muted-foreground">none</li>}
+                </ul>
+              </div>
+              <div>
+                <div className="text-tertiary font-mono text-[10px] uppercase tracking-wider mb-1">Excluded (off-topic for this CC)</div>
+                <ul className="space-y-0.5 text-muted-foreground">
+                  {(manifest.excluded_modules ?? []).map((m: string) => <li key={m}>· {m}</li>)}
+                  {!(manifest.excluded_modules ?? []).length && <li>none</li>}
+                </ul>
+              </div>
+            </div>
+          </section>
         )}
         {run && <GuidelineMatchPanel matches={run.guideline_matches} runId={run.id} />}
         {run && <RedFlagPanel findings={run.red_flag_findings} runId={run.id} />}

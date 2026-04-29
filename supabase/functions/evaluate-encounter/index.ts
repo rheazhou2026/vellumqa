@@ -298,11 +298,43 @@ Deno.serve(async (req) => {
       ? body.guideline_version_ids.filter((v: any) => UUID_RE.test(String(v)))
       : [];
 
-    const { data: allSources } = await admin
+    // Pull every active guideline, then narrow by BOTH specialty and chief
+    // complaint. A chest-pain ED encounter must trigger the cardiology chest
+    // pain pathway even though the encounter specialty is emergency_medicine,
+    // and a headache encounter must NOT load sepsis/chest-pain rules.
+    const { data: allSourcesRaw } = await admin
       .from("guideline_sources")
       .select("id,name,abbreviation,specialty,key_recommendations,red_flag_criteria")
-      .eq("active", true)
-      .or(`specialty.eq.${encounter.specialty},specialty.is.null`);
+      .eq("active", true);
+
+    // Lightweight chief-complaint → topic keyword router. Each topic lists
+    // the substrings (against guideline name/abbrev/recommendations) that
+    // make a guideline relevant. Anything not matched is excluded so the
+    // rubric load manifest stays scoped to this encounter.
+    const cc = (encounter.chief_complaint ?? "").toLowerCase();
+    const topicMatchers: { test: RegExp; needles: RegExp }[] = [
+      { test: /chest pain|angina|acs|stemi|nstemi|cardiac/, needles: /chest pain|acs|cardiac|aha|acc|cp/i },
+      { test: /headache|migraine|thunderclap/, needles: /headache|snoop|sah|migraine/i },
+      { test: /fever|sepsis|infection/, needles: /sepsis|febrile|neutropenia|infection/i },
+      { test: /infant|pediatric|neonate|febrile baby/, needles: /pediatric|infant|aap/i },
+      { test: /diabetes|hyperglycem|dka|a1c/, needles: /ada|diabetes/i },
+      { test: /suicid|self harm|depression|psychiatric/, needles: /suicide|psychiatric|apa/i },
+      { test: /cancer|chemo|oncolog|neutropen/, needles: /oncology|nccn|neutropenia/i },
+    ];
+    const matchedTopics = topicMatchers.filter((t) => t.test.test(cc));
+    const allSources = (allSourcesRaw ?? []).filter((g: any) => {
+      const sameSpecialty = g.specialty === encounter.specialty || !g.specialty;
+      if (!matchedTopics.length) {
+        // No CC keywords matched — fall back to specialty-only filtering.
+        return sameSpecialty;
+      }
+      const hay = `${g.name ?? ""} ${g.abbreviation ?? ""} ${JSON.stringify(g.key_recommendations ?? [])} ${JSON.stringify(g.red_flag_criteria ?? [])}`;
+      const topicallyRelevant = matchedTopics.some((t) => t.needles.test(hay));
+      return topicallyRelevant; // cross-specialty allowed when CC matches
+    });
+    const excludedGuidelines = (allSourcesRaw ?? [])
+      .filter((g: any) => !allSources.some((k: any) => k.id === g.id))
+      .map((g: any) => g.abbreviation ?? g.name);
 
     let versionRows: any[] = [];
     if (requestedVersionIds.length) {
@@ -496,6 +528,25 @@ Deno.serve(async (req) => {
     );
     const reasoningOut = toolArgs(reasoningResp);
 
+    // Persist the rubric load manifest so reviewers can see exactly which
+    // guideline sources were considered for THIS chief complaint and which
+    // were excluded. This is the audit trail that tells you the cross-refs
+    // weren't the wrong specialty's rules accidentally loaded.
+    let manifestId: string | null = null;
+    {
+      const { data: manifest } = await admin
+        .from("rubric_load_manifests")
+        .insert({
+          encounter_id: encounterId,
+          loaded_modules: (allSources ?? []).map((g: any) => g.abbreviation ?? g.name),
+          excluded_modules: excludedGuidelines,
+          guideline_versions: usedVersions,
+        })
+        .select("id")
+        .single();
+      manifestId = manifest?.id ?? null;
+    }
+
     // ---- Persist ----
     const claimRows = (claimsOut ?? []).map((c: any) => ({
       artifact_id: artifact.id,
@@ -515,6 +566,7 @@ Deno.serve(async (req) => {
       .insert({
         encounter_id: encounterId,
         artifact_id: artifact.id,
+        manifest_id: manifestId,
         trust_score: ss.trust_score ?? null,
         source_faithfulness_index: ss.source_faithfulness_index ?? null,
         differential_integrity_score: ss.differential_integrity_score ?? null,
