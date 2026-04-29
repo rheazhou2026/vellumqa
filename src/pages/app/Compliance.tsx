@@ -1,6 +1,7 @@
 import { useParams, NavLink } from "react-router-dom";
 import PageHeader from "@/components/vellum/PageHeader";
 import StubPanel from "@/components/vellum/StubPanel";
+import ConsentTab from "@/components/vellum/ConsentTab";
 
 const TABS = [
   { to: "/compliance", label: "Consent" },
@@ -21,7 +22,14 @@ export default function Compliance() {
         ))}
       </div>
       <div className="p-6">
-        <StubPanel title={`${tab} module`} description="Consent disclosure tracking, audit_events ledger with NDJSON/PDF export, and 8-dimension medico-legal exposure grid populate when ingestion is connected." />
+        {tab === "consent" ? (
+          <ConsentTab />
+        ) : (
+          <StubPanel
+            title={`${tab} module`}
+            description="Consent disclosure tracking, audit_events ledger with NDJSON/PDF export, and 8-dimension medico-legal exposure grid populate when ingestion is connected."
+          />
+        )}
       </div>
     </div>
   );
