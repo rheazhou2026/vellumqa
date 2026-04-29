@@ -289,8 +289,8 @@ export default function GuidelinesTab() {
 
 function StatusBadge({ active }: { active: boolean }) {
   if (active) {
-    return <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm bg-success-bg text-success border border-success/30">
-      <span className="h-1.5 w-1.5 rounded-full bg-success" /> Active
+    return <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm bg-pass-bg text-pass border border-pass/30">
+      <span className="h-1.5 w-1.5 rounded-full bg-pass" /> Active
     </span>;
   }
   return <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm bg-secondary text-muted-foreground border border-border">
