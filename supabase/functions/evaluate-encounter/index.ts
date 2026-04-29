@@ -290,6 +290,150 @@ Deno.serve(async (req) => {
     );
     const evalOut = toolArgs(scoreResp);
 
+    // ---- Stage 3: Clinical reasoning + guideline-aware QA + red flags + bias ----
+    const { data: guidelines } = await admin
+      .from("guideline_sources")
+      .select("id,name,abbreviation,specialty,key_recommendations,red_flag_criteria")
+      .eq("active", true)
+      .or(`specialty.eq.${encounter.specialty},specialty.is.null`);
+
+    const guidelineBlock = (guidelines ?? [])
+      .map(
+        (g: any) =>
+          `${g.abbreviation ?? g.name} (${g.specialty ?? "general"}):\n  Recommendations: ${JSON.stringify(g.key_recommendations ?? [])}\n  Red flags: ${JSON.stringify(g.red_flag_criteria ?? [])}`,
+      )
+      .join("\n\n")
+      .slice(0, 8000);
+
+    const reasoningSchema = {
+      type: "object",
+      properties: {
+        reasoning_quality: {
+          type: "string",
+          enum: ["excellent", "adequate", "weak", "unsafe"],
+        },
+        reasoning_summary: { type: "string" },
+        strengths: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              detail: { type: "string" },
+              evidence_quote: { type: "string" },
+            },
+            required: ["title", "detail"],
+          },
+        },
+        gaps: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              detail: { type: "string" },
+              severity: { type: "string", enum: ["low", "moderate", "high", "critical"] },
+              suggestion: { type: "string" },
+            },
+            required: ["title", "detail", "severity"],
+          },
+        },
+        guideline_matches: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              guideline: { type: "string" },
+              recommendation_id: { type: "string" },
+              recommendation: { type: "string" },
+              status: { type: "string", enum: ["aligned", "partial", "missing", "contradicted"] },
+              evidence_quote: { type: "string" },
+              suggestion: { type: "string" },
+            },
+            required: ["guideline", "recommendation", "status"],
+          },
+        },
+        red_flag_findings: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              guideline: { type: "string" },
+              flag_id: { type: "string" },
+              label: { type: "string" },
+              status: { type: "string", enum: ["addressed", "missed", "not_applicable"] },
+              why_it_matters: { type: "string" },
+              suggested_addition: { type: "string" },
+            },
+            required: ["label", "status", "why_it_matters"],
+          },
+        },
+        cognitive_biases: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              bias: {
+                type: "string",
+                enum: [
+                  "premature_closure",
+                  "anchoring",
+                  "availability",
+                  "confirmation",
+                  "framing",
+                  "search_satisficing",
+                ],
+              },
+              detected: { type: "boolean" },
+              evidence_quote: { type: "string" },
+              explanation: { type: "string" },
+              remediation: { type: "string" },
+            },
+            required: ["bias", "detected", "explanation"],
+          },
+        },
+      },
+      required: [
+        "reasoning_quality",
+        "reasoning_summary",
+        "strengths",
+        "gaps",
+        "guideline_matches",
+        "red_flag_findings",
+        "cognitive_biases",
+      ],
+    };
+
+    const reasoningResp = await callGateway(
+      {
+        model: MODEL,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are Vellum's Clinical Reasoning analyst. Critique the AI-generated note like a senior attending: assess reasoning quality, identify strengths and gaps, cross-reference saved specialty guidelines (mark each recommendation aligned/partial/missing/contradicted with an evidence quote and suggestion), screen the listed red-flag criteria (e.g. SNOOP, sepsis, ACS) and flag missed ones with WHY they matter and a concrete suggested note addition, and detect cognitive biases (premature closure, anchoring, availability, confirmation, framing, search satisficing) — only mark detected=true with concrete evidence and a remediation. Be specific. Cite quotes from the note verbatim.",
+          },
+          {
+            role: "user",
+            content: `SPECIALTY: ${encounter.specialty}\nVISIT: ${encounter.visit_type ?? "n/a"}\nCHIEF COMPLAINT: ${encounter.chief_complaint ?? "n/a"}\n\n=== SAVED GUIDELINES FOR THIS SPECIALTY ===\n${guidelineBlock || "(no guidelines configured)"}\n\n=== SOURCE EVIDENCE ===\n${sourceText.slice(0, 8000) || "(none)"}\n\n=== AI-GENERATED NOTE ===\n${noteText}\n\n=== EXTRACTED CLAIMS ===\n${JSON.stringify(claimsOut).slice(0, 4000)}`,
+          },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "report_reasoning",
+              description: "Report clinical reasoning analysis",
+              parameters: reasoningSchema,
+            },
+          },
+        ],
+        tool_choice: { type: "function", function: { name: "report_reasoning" } },
+      },
+      apiKey,
+    );
+    const reasoningOut = toolArgs(reasoningResp);
+
     // ---- Persist ----
     const claimRows = (claimsOut ?? []).map((c: any) => ({
       artifact_id: artifact.id,
@@ -320,6 +464,13 @@ Deno.serve(async (req) => {
         reviewability_index: ss.reviewability_index ?? null,
         evaluator_confidence: ss.evaluator_confidence ?? null,
         critical_failures: evalOut.critical_failures ?? [],
+        reasoning_quality: reasoningOut.reasoning_quality ?? null,
+        reasoning_summary: reasoningOut.reasoning_summary ?? null,
+        reasoning_strengths: reasoningOut.strengths ?? [],
+        reasoning_gaps: reasoningOut.gaps ?? [],
+        guideline_matches: reasoningOut.guideline_matches ?? [],
+        red_flag_findings: reasoningOut.red_flag_findings ?? [],
+        cognitive_biases: (reasoningOut.cognitive_biases ?? []).filter((b: any) => b.detected),
         auto_escalated:
           (evalOut.critical_failures ?? []).length > 0 || (ss.trust_score ?? 100) < 60,
       })
