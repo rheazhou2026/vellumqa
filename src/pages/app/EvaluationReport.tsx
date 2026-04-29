@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Download, Printer, FileDown, Loader2 } from "lucide-react";
 import { EvidenceTraceProvider, EvidenceQuote } from "@/components/vellum/EvidenceTrace";
 import { downloadEvaluationPdf } from "@/components/vellum/EvaluationPdf";
+import GuidelineVersionBanner from "@/components/vellum/GuidelineVersionBanner";
+import FindingFeedback from "@/components/vellum/FindingFeedback";
 import { toast } from "sonner";
 
 function toCSV(rows: Record<string, unknown>[]): string {
@@ -31,6 +33,22 @@ export default function EvaluationReport() {
   const [domains, setDomains] = useState<Record<string, string>>({});
   const [analytics, setAnalytics] = useState<{ vendor: string; avg: number; runs: number; criticalRate: number }[]>([]);
   const [pdfBusy, setPdfBusy] = useState(false);
+
+  async function reload() {
+    if (!id) return;
+    const { data: r } = await supabase
+      .from("evaluation_runs")
+      .select("*")
+      .eq("encounter_id", id)
+      .order("completed_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setRun(r);
+    if (r) {
+      const { data: cr } = await supabase.from("criterion_results").select("*").eq("evaluation_run_id", r.id);
+      setResults(cr ?? []);
+    }
+  }
 
   useEffect(() => {
     if (!id) return;
@@ -213,9 +231,16 @@ export default function EvaluationReport() {
         )}
 
         {run && <ClinicalReasoningPanel run={run} />}
-        {run && <GuidelineMatchPanel matches={run.guideline_matches} />}
-        {run && <RedFlagPanel findings={run.red_flag_findings} />}
-        {run && <CognitiveBiasPanel biases={run.cognitive_biases} />}
+        {run && (
+          <GuidelineVersionBanner
+            encounterId={id!}
+            used={(run.guideline_versions_used as any[]) ?? []}
+            onReran={reload}
+          />
+        )}
+        {run && <GuidelineMatchPanel matches={run.guideline_matches} runId={run.id} />}
+        {run && <RedFlagPanel findings={run.red_flag_findings} runId={run.id} />}
+        {run && <CognitiveBiasPanel biases={run.cognitive_biases} runId={run.id} />}
 
         {/* Claim ledger */}
         <section className="vellum-panel p-6">
@@ -264,6 +289,7 @@ export default function EvaluationReport() {
                           <EvidenceQuote quote={r.evidence.quote} prefer="any" />
                         </div>
                       )}
+                      {run && <FindingFeedback runId={run.id} findingType="criterion" findingKey={r.criterion_id ?? r.id} compact />}
                     </li>
                   ))}
                 </ul>
