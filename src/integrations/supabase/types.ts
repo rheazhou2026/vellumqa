@@ -474,17 +474,24 @@ export type Database = {
         Row: {
           artifact_id: string | null
           auto_escalated: boolean
+          cognitive_biases: Json | null
           completed_at: string
           critical_failures: string[] | null
           differential_integrity_score: number | null
           encounter_id: string
           evaluator_confidence: number | null
           guideline_concordance_score: number | null
+          guideline_matches: Json | null
           id: string
           manifest_id: string | null
           medico_legal_exposure_score: number | null
           omission_hazard_score: number | null
           patient_safety_escalation_score: number | null
+          reasoning_gaps: Json | null
+          reasoning_quality: string | null
+          reasoning_strengths: Json | null
+          reasoning_summary: string | null
+          red_flag_findings: Json | null
           reviewability_index: number | null
           source_faithfulness_index: number | null
           trust_score: number | null
@@ -493,17 +500,24 @@ export type Database = {
         Insert: {
           artifact_id?: string | null
           auto_escalated?: boolean
+          cognitive_biases?: Json | null
           completed_at?: string
           critical_failures?: string[] | null
           differential_integrity_score?: number | null
           encounter_id: string
           evaluator_confidence?: number | null
           guideline_concordance_score?: number | null
+          guideline_matches?: Json | null
           id?: string
           manifest_id?: string | null
           medico_legal_exposure_score?: number | null
           omission_hazard_score?: number | null
           patient_safety_escalation_score?: number | null
+          reasoning_gaps?: Json | null
+          reasoning_quality?: string | null
+          reasoning_strengths?: Json | null
+          reasoning_summary?: string | null
+          red_flag_findings?: Json | null
           reviewability_index?: number | null
           source_faithfulness_index?: number | null
           trust_score?: number | null
@@ -512,17 +526,24 @@ export type Database = {
         Update: {
           artifact_id?: string | null
           auto_escalated?: boolean
+          cognitive_biases?: Json | null
           completed_at?: string
           critical_failures?: string[] | null
           differential_integrity_score?: number | null
           encounter_id?: string
           evaluator_confidence?: number | null
           guideline_concordance_score?: number | null
+          guideline_matches?: Json | null
           id?: string
           manifest_id?: string | null
           medico_legal_exposure_score?: number | null
           omission_hazard_score?: number | null
           patient_safety_escalation_score?: number | null
+          reasoning_gaps?: Json | null
+          reasoning_quality?: string | null
+          reasoning_strengths?: Json | null
+          reasoning_summary?: string | null
+          red_flag_findings?: Json | null
           reviewability_index?: number | null
           source_faithfulness_index?: number | null
           trust_score?: number | null
@@ -558,8 +579,10 @@ export type Database = {
           active: boolean
           created_at: string
           id: string
+          key_recommendations: Json | null
           name: string
           organization_id: string | null
+          red_flag_criteria: Json | null
           source_type: string | null
           source_url: string | null
           specialty: string | null
@@ -569,8 +592,10 @@ export type Database = {
           active?: boolean
           created_at?: string
           id?: string
+          key_recommendations?: Json | null
           name: string
           organization_id?: string | null
+          red_flag_criteria?: Json | null
           source_type?: string | null
           source_url?: string | null
           specialty?: string | null
@@ -580,8 +605,10 @@ export type Database = {
           active?: boolean
           created_at?: string
           id?: string
+          key_recommendations?: Json | null
           name?: string
           organization_id?: string | null
+          red_flag_criteria?: Json | null
           source_type?: string | null
           source_url?: string | null
           specialty?: string | null
