@@ -566,6 +566,7 @@ Deno.serve(async (req) => {
       .insert({
         encounter_id: encounterId,
         artifact_id: artifact.id,
+        manifest_id: manifestId,
         trust_score: ss.trust_score ?? null,
         source_faithfulness_index: ss.source_faithfulness_index ?? null,
         differential_integrity_score: ss.differential_integrity_score ?? null,
