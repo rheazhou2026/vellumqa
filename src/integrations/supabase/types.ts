@@ -782,6 +782,45 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          encounter_id: string | null
+          id: string
+          link_path: string | null
+          message: string | null
+          notification_type: string
+          read: boolean
+          severity: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          encounter_id?: string | null
+          id?: string
+          link_path?: string | null
+          message?: string | null
+          notification_type: string
+          read?: boolean
+          severity?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          encounter_id?: string | null
+          id?: string
+          link_path?: string | null
+          message?: string | null
+          notification_type?: string
+          read?: boolean
+          severity?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       organizations: {
         Row: {
           compliance_settings: Json | null
