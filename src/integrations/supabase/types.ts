@@ -1204,33 +1204,48 @@ export type Database = {
           created_at: string
           credentials: string | null
           display_name: string | null
+          email: string | null
           id: string
+          invited_by: string | null
+          invited_email: string | null
           organization_id: string | null
+          removed_at: string | null
           site_id: string | null
           specialty: string | null
-          user_id: string
+          status: string
+          user_id: string | null
           vellum_role: string
         }
         Insert: {
           created_at?: string
           credentials?: string | null
           display_name?: string | null
+          email?: string | null
           id?: string
+          invited_by?: string | null
+          invited_email?: string | null
           organization_id?: string | null
+          removed_at?: string | null
           site_id?: string | null
           specialty?: string | null
-          user_id: string
+          status?: string
+          user_id?: string | null
           vellum_role?: string
         }
         Update: {
           created_at?: string
           credentials?: string | null
           display_name?: string | null
+          email?: string | null
           id?: string
+          invited_by?: string | null
+          invited_email?: string | null
           organization_id?: string | null
+          removed_at?: string | null
           site_id?: string | null
           specialty?: string | null
-          user_id?: string
+          status?: string
+          user_id?: string | null
           vellum_role?: string
         }
         Relationships: [
