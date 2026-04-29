@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
-  Loader2, Check, X, CircleSlash, AlertTriangle, ArrowUpRight, FileText, Save, Send, ShieldAlert,
+  Loader2, Check, X, CircleSlash, AlertTriangle, ArrowUpRight, FileText, Save, ShieldAlert,
 } from "lucide-react";
 import PageHeader from "@/components/vellum/PageHeader";
 import { Button } from "@/components/ui/button";
