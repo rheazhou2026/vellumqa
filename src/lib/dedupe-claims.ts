@@ -17,13 +17,30 @@ const STATUS_RANK: Record<string, number> = {
   supported: 1,
 };
 
+// Aggressively normalize claim text so the LLM extractor's near-duplicates
+// (different sections, trailing punctuation, "Assessment of X" vs "X",
+// re-typed as `exam` vs `vital`) collapse into a single ledger row.
+function normalizeClaimText(raw: string): string {
+  let t = String(raw ?? "").toLowerCase().trim();
+  // Collapse whitespace.
+  t = t.replace(/\s+/g, " ");
+  // Strip trailing punctuation (.,;: and quotes).
+  t = t.replace(/[\s.,;:!?"'`]+$/g, "");
+  // Strip leading boilerplate prefixes the extractor sometimes adds.
+  t = t.replace(/^(assessment of|diagnosis of|impression of|plan to|plan:|note:|patient (is|was) |the patient (is|was) )/i, "").trim();
+  return t;
+}
+
 export function dedupeClaims<T extends RawClaim>(claims: T[]): T[] {
   const dedupMap = new Map<string, T>();
   for (const c of claims ?? []) {
-    const text = String(c.claim_text ?? "").trim().toLowerCase().replace(/\s+/g, " ");
-    const type = String(c.claim_type ?? "").trim().toLowerCase();
+    const text = normalizeClaimText(c.claim_text);
     if (!text) continue;
-    const key = `${type}::${text}`;
+    // Key on normalized TEXT only — the extractor occasionally retypes the
+    // same statement as `exam` vs `vital` or `assessment` vs `plan`.
+    // Collapsing across types prevents the ledger from ballooning to 19 rows
+    // when there are really ~7 unique clinical claims.
+    const key = text;
     const existing = dedupMap.get(key);
     if (!existing) {
       dedupMap.set(key, { ...c });
