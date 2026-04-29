@@ -106,7 +106,13 @@ export default function ReviewTask() {
     for (const s of sources) {
       const t = (s.source_type ?? "transcript").toLowerCase();
       const target = map[t] ? t : "transcript";
-      map[target].push(s.content ?? "");
+      const c = s.content;
+      let text = "";
+      if (typeof c === "string") text = c;
+      else if (c && typeof c === "object") {
+        text = (c as any).text ?? (c as any).raw ?? (c as any).content ?? JSON.stringify(c, null, 2);
+      }
+      if (text) map[target].push(text);
     }
     return map;
   }, [sources]);
