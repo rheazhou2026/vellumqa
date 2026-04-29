@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import PageHeader from "@/components/vellum/PageHeader";
 import StubPanel from "@/components/vellum/StubPanel";
 import CalibrationTab from "@/components/vellum/CalibrationTab";
+import GuidelinesTab from "@/components/vellum/GuidelinesTab";
 
 const TABS = [
   { to: "/governance", label: "Rubric Studio" },
@@ -68,6 +69,10 @@ export default function Governance() {
       ) : tab === "calibration" ? (
         <div className="p-6">
           <CalibrationTab />
+        </div>
+      ) : tab === "guidelines" ? (
+        <div className="p-6">
+          <GuidelinesTab />
         </div>
       ) : (
         <div className="p-6">
