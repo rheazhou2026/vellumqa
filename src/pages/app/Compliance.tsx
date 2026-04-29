@@ -3,6 +3,7 @@ import PageHeader from "@/components/vellum/PageHeader";
 import StubPanel from "@/components/vellum/StubPanel";
 import ConsentTab from "@/components/vellum/ConsentTab";
 import AuditTab from "@/components/vellum/AuditTab";
+import LegalTab from "@/components/vellum/LegalTab";
 
 const TABS = [
   { to: "/compliance", label: "Consent" },
@@ -27,6 +28,8 @@ export default function Compliance() {
           <ConsentTab />
         ) : tab === "audit" ? (
           <AuditTab />
+        ) : tab === "legal" ? (
+          <LegalTab />
         ) : (
           <StubPanel
             title={`${tab} module`}
