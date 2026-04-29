@@ -26,6 +26,7 @@ export default function EncounterDetail() {
   const [criteriaMap, setCriteriaMap] = useState<Map<string, any>>(new Map());
   const [activeTab, setActiveTab] = useState("transcript");
   const [running, setRunning] = useState(false);
+  const [manifest, setManifest] = useState<any>(null);
 
   async function load() {
     if (!id) return;
@@ -50,6 +51,16 @@ export default function EncounterDetail() {
     if (r) {
       const { data: cr } = await supabase.from("criterion_results").select("*").eq("evaluation_run_id", r.id);
       setResults(cr ?? []);
+      if (r.manifest_id) {
+        const { data: m } = await supabase
+          .from("rubric_load_manifests")
+          .select("*")
+          .eq("id", r.manifest_id)
+          .maybeSingle();
+        setManifest(m ?? null);
+      } else {
+        setManifest(null);
+      }
     }
   }
 
