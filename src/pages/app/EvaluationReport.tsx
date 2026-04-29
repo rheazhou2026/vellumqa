@@ -208,24 +208,41 @@ export default function EvaluationReport() {
         {/* Sub-scores */}
         {run && (
           <section className="vellum-panel p-6">
-            <div className="font-mono text-[10px] uppercase tracking-widest text-tertiary mb-3">Domain sub-scores</div>
+            <div className="font-mono text-[10px] uppercase tracking-widest text-tertiary mb-3 flex items-center justify-between">
+              <span>Domain sub-scores</span>
+              <span className="normal-case tracking-normal text-[10px] text-muted-foreground font-mono">
+                <span className="text-pass">↑ better</span> · <span className="text-critical">↑ worse</span> for hazard rows
+              </span>
+            </div>
             <div className="grid grid-cols-3 gap-3">
               {[
-                ["Source faithfulness", run.source_faithfulness_index],
-                ["Differential integrity", run.differential_integrity_score],
-                ["Guideline concordance", run.guideline_concordance_score],
-                ["Omission hazard", run.omission_hazard_score],
-                ["Patient-safety escalation", run.patient_safety_escalation_score],
-                ["Uncertainty calibration", run.uncertainty_calibration_score],
-                ["Medico-legal exposure", run.medico_legal_exposure_score],
-                ["Reviewability", run.reviewability_index],
-                ["Evaluator confidence", run.evaluator_confidence],
-              ].map(([label, val]: any) => (
-                <div key={label} className="border border-border rounded-sm p-3 bg-surface">
-                  <div className="text-[10px] uppercase tracking-wider text-tertiary">{label}</div>
-                  <div className="font-display text-2xl mt-1">{val != null ? Math.round(val * 10) / 10 : "—"}</div>
-                </div>
-              ))}
+                { label: "Source faithfulness", val: run.source_faithfulness_index, dir: "up" },
+                { label: "Differential integrity", val: run.differential_integrity_score, dir: "up" },
+                { label: "Guideline concordance", val: run.guideline_concordance_score, dir: "up" },
+                { label: "Omission hazard", val: run.omission_hazard_score, dir: "down" },
+                { label: "Patient-safety escalation", val: run.patient_safety_escalation_score, dir: "down" },
+                { label: "Uncertainty calibration", val: run.uncertainty_calibration_score, dir: "up" },
+                { label: "Medico-legal exposure", val: run.medico_legal_exposure_score, dir: "down" },
+                { label: "Reviewability", val: run.reviewability_index, dir: "up" },
+                { label: "Evaluator confidence", val: run.evaluator_confidence, dir: "up", pct: true },
+              ].map(({ label, val, dir, pct }: any) => {
+                const display = val == null
+                  ? "—"
+                  : pct
+                    ? `${Math.round((val <= 1 ? val * 100 : val))}%`
+                    : Math.round(val * 10) / 10;
+                return (
+                  <div key={label} className="border border-border rounded-sm p-3 bg-surface">
+                    <div className="text-[10px] uppercase tracking-wider text-tertiary flex items-center justify-between">
+                      <span>{label}</span>
+                      <span className={dir === "down" ? "text-critical" : "text-pass"} title={dir === "down" ? "Higher = worse" : "Higher = better"}>
+                        {dir === "down" ? "↑ worse" : "↑ better"}
+                      </span>
+                    </div>
+                    <div className="font-display text-2xl mt-1">{display}</div>
+                  </div>
+                );
+              })}
             </div>
           </section>
         )}
