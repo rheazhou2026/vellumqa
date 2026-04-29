@@ -956,6 +956,9 @@ export type Database = {
       rubric_criteria: {
         Row: {
           artifact_types: string[] | null
+          calibration_matrix: Json | null
+          calibration_status: string
+          clinician_agreement_rate: number | null
           created_at: string
           criterion_id: string
           critical_failure_possible: boolean
@@ -964,16 +967,23 @@ export type Database = {
           evidence_requirements: Json | null
           explainability_template: string | null
           id: string
+          last_calibrated_at: string | null
+          last_calibrated_by: string | null
           name: string
           review_action: Json | null
           scoring: Json | null
+          sensitivity: number | null
           severity_level: string | null
           specialty_modules: string[] | null
+          specificity: number | null
           trigger_logic: Json | null
           version: string | null
         }
         Insert: {
           artifact_types?: string[] | null
+          calibration_matrix?: Json | null
+          calibration_status?: string
+          clinician_agreement_rate?: number | null
           created_at?: string
           criterion_id: string
           critical_failure_possible?: boolean
@@ -982,16 +992,23 @@ export type Database = {
           evidence_requirements?: Json | null
           explainability_template?: string | null
           id?: string
+          last_calibrated_at?: string | null
+          last_calibrated_by?: string | null
           name: string
           review_action?: Json | null
           scoring?: Json | null
+          sensitivity?: number | null
           severity_level?: string | null
           specialty_modules?: string[] | null
+          specificity?: number | null
           trigger_logic?: Json | null
           version?: string | null
         }
         Update: {
           artifact_types?: string[] | null
+          calibration_matrix?: Json | null
+          calibration_status?: string
+          clinician_agreement_rate?: number | null
           created_at?: string
           criterion_id?: string
           critical_failure_possible?: boolean
@@ -1000,11 +1017,15 @@ export type Database = {
           evidence_requirements?: Json | null
           explainability_template?: string | null
           id?: string
+          last_calibrated_at?: string | null
+          last_calibrated_by?: string | null
           name?: string
           review_action?: Json | null
           scoring?: Json | null
+          sensitivity?: number | null
           severity_level?: string | null
           specialty_modules?: string[] | null
+          specificity?: number | null
           trigger_logic?: Json | null
           version?: string | null
         }
