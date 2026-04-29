@@ -6,21 +6,30 @@ describe("dedupeClaims", () => {
     // Same 7 unique claims, several repeated because the extractor surfaced
     // them in multiple note sections (HPI + Assessment + Plan etc.). The
     // algorithm must dedupe by normalized (claim_type, claim_text).
+    // 7 unique claims, repeated across multiple note sections to reach 13 rows.
     const raw = [
+      // 1. chest pain (×2)
       { claim_text: "Chest pain radiating to left arm", claim_type: "history", status: "supported", risk_weight: 0.6 },
       { claim_text: "  chest pain radiating to LEFT arm ", claim_type: "history", status: "unsupported", risk_weight: 0.7 },
+      // 2. lisinopril (×3 — appears in HPI, medication list, plan)
       { claim_text: "Patient takes lisinopril 10mg daily", claim_type: "medication", status: "unsupported", risk_weight: 0.9 },
       { claim_text: "patient takes lisinopril 10mg daily", claim_type: "medication", status: "contradicted", risk_weight: 0.95 },
+      { claim_text: "PATIENT TAKES LISINOPRIL 10mg DAILY", claim_type: "medication", status: "supported", risk_weight: 0.5 },
+      // 3. BP (×1)
       { claim_text: "BP 142/88", claim_type: "vital", status: "supported", risk_weight: 0.3 },
+      // 4. ACS dx (×2)
       { claim_text: "Diagnosis: acute coronary syndrome", claim_type: "diagnosis", status: "supported", risk_weight: 0.8 },
       { claim_text: "Diagnosis: acute coronary syndrome", claim_type: "diagnosis", status: "uncertain", risk_weight: 0.85 },
+      // 5. order troponin (×2)
       { claim_text: "Order troponin", claim_type: "plan", status: "supported", risk_weight: 0.5 },
       { claim_text: "order troponin", claim_type: "plan", status: "supported", risk_weight: 0.5 },
-      { claim_text: "No known drug allergies", claim_type: "history", status: "contradicted", risk_weight: 1.0 },
+      // 6. penicillin allergy (×1)
       { claim_text: "Penicillin allergy", claim_type: "history", status: "unsupported", risk_weight: 0.95 },
+      // 7. ECG ST depression (×2)
       { claim_text: "ECG shows ST depression V4-V6", claim_type: "exam", status: "supported", risk_weight: 0.7 },
       { claim_text: "ECG shows ST depression V4-V6", claim_type: "exam", status: "supported", risk_weight: 0.7 },
     ];
+    expect(raw).toHaveLength(13);
 
     const out = dedupeClaims(raw as any);
     expect(out).toHaveLength(7);
