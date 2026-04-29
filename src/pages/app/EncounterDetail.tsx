@@ -274,6 +274,36 @@ export default function EncounterDetail() {
                 </div>
               </div>
 
+              {manifest && (
+                <div className="p-4 border-b border-border">
+                  <div className="font-mono text-[10px] uppercase tracking-widest text-tertiary mb-2 flex items-center justify-between">
+                    <span>Rubric manifest · CC scoping</span>
+                    <span className="text-muted-foreground normal-case tracking-normal">
+                      {(manifest.loaded_modules ?? []).length} loaded · {(manifest.excluded_modules ?? []).length} excluded
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-[10px]">
+                    <div className="border border-border rounded-sm p-2 bg-surface">
+                      <div className="text-pass font-mono uppercase tracking-wider mb-1">Loaded</div>
+                      <ul className="space-y-0.5 text-foreground/90 max-h-32 overflow-auto">
+                        {(manifest.loaded_modules ?? []).map((m: string) => <li key={m} className="truncate" title={m}>· {m}</li>)}
+                        {!(manifest.loaded_modules ?? []).length && <li className="text-muted-foreground">none</li>}
+                      </ul>
+                    </div>
+                    <div className="border border-border rounded-sm p-2 bg-surface">
+                      <div className="text-tertiary font-mono uppercase tracking-wider mb-1" title="Excluded as off-topic for this chief complaint">Excluded</div>
+                      <ul className="space-y-0.5 text-muted-foreground max-h-32 overflow-auto">
+                        {(manifest.excluded_modules ?? []).map((m: any) => {
+                          const label = typeof m === "string" ? m : (m?.name ?? m?.abbreviation ?? JSON.stringify(m));
+                          return <li key={label} className="truncate" title={label}>· {label}</li>;
+                        })}
+                        {!(manifest.excluded_modules ?? []).length && <li>none</li>}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="p-4">
                 <div className="font-mono text-[10px] uppercase tracking-widest text-tertiary mb-2">Criterion findings · {results.length}</div>
                 <ul className="space-y-2">
