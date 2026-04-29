@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,8 +40,13 @@ export default function Auth() {
           },
         });
         if (error) throw error;
-        toast.success("Account created. Check your email to verify before signing in.");
-        setMode("signin");
+        toast.success("Account created. Signing you in…");
+        const { error: siErr } = await supabase.auth.signInWithPassword({ email, password });
+        if (siErr) {
+          // Fallback: email confirmation may be required
+          toast.message("Check your email to verify before signing in.");
+          setMode("signin");
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -53,11 +59,13 @@ export default function Auth() {
   }
 
   async function google() {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/dashboard` },
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
     });
-    if (error) toast.error(error.message);
+    if (result.error) {
+      toast.error(result.error instanceof Error ? result.error.message : "Google sign-in failed");
+    }
+    // If redirected, the browser will navigate. Otherwise the session is set and onAuthStateChange routes us.
   }
 
   return (
@@ -138,7 +146,7 @@ export default function Auth() {
 
             {mode === "signup" && (
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                After creating your account you must verify your email before signing in. Check your inbox (and spam folder).
+                Reviewer accounts are provisioned instantly. You'll be routed to the console after sign-up.
               </p>
             )}
 
