@@ -11,6 +11,7 @@ import CognitiveBiasPanel from "@/components/vellum/CognitiveBiasPanel";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 import { Loader2, Play, AlertOctagon, FileText, ExternalLink } from "lucide-react";
+import { EvidenceTraceProvider, TraceablePane, EvidenceQuote } from "@/components/vellum/EvidenceTrace";
 
 export default function EncounterDetail() {
   const { id } = useParams<{ id: string }>();
@@ -108,6 +109,7 @@ export default function EncounterDetail() {
   });
 
   return (
+    <EvidenceTraceProvider>
     <div>
       <PageHeader
         eyebrow={`ENC // ${id?.slice(0, 8)}`}
@@ -129,7 +131,7 @@ export default function EncounterDetail() {
 
       <div className="p-6 grid lg:grid-cols-12 gap-4">
         {/* Source */}
-        <div className="lg:col-span-4 vellum-panel flex flex-col min-h-[640px]">
+        <TraceablePane id="source" target="source" className="lg:col-span-4 vellum-panel flex flex-col min-h-[640px]">
           <div className="border-b border-border px-4 py-2 flex items-center gap-1">
             {["transcript", "ehr", "labs"].map((t) => (
               <button key={t} onClick={() => setActiveTab(t)}
@@ -146,10 +148,10 @@ export default function EncounterDetail() {
               {sourceText(activeTab) ?? <span className="text-tertiary italic">No {activeTab} source provided.</span>}
             </pre>
           </div>
-        </div>
+        </TraceablePane>
 
         {/* AI-generated note */}
-        <div className="lg:col-span-4 vellum-panel flex flex-col min-h-[640px]">
+        <TraceablePane id="note" target="note" className="lg:col-span-4 vellum-panel flex flex-col min-h-[640px]">
           <div className="border-b border-border px-4 py-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <FileText className="h-3.5 w-3.5 text-accent" />
@@ -182,7 +184,7 @@ export default function EncounterDetail() {
               </ul>
             </div>
           )}
-        </div>
+        </TraceablePane>
 
         {/* Vellum evaluation */}
         <div className="lg:col-span-4 vellum-panel flex flex-col min-h-[640px]">
@@ -259,8 +261,8 @@ export default function EncounterDetail() {
                             </div>
                             <div className="text-[11px] text-foreground/80 mt-1">{r.explanation}</div>
                             {r.evidence?.quote && (
-                              <div className="mt-1.5 border-l-2 border-accent/40 pl-2 text-[11px] italic text-muted-foreground">
-                                "{r.evidence.quote}"
+                              <div className="mt-1.5 text-[11px]">
+                                <EvidenceQuote quote={r.evidence.quote} prefer="note" />
                               </div>
                             )}
                           </div>
@@ -286,5 +288,6 @@ export default function EncounterDetail() {
         </div>
       )}
     </div>
+    </EvidenceTraceProvider>
   );
 }
