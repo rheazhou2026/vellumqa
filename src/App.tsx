@@ -17,6 +17,7 @@ import Compliance from "./pages/app/Compliance";
 import Governance from "./pages/app/Governance";
 import Settings from "./pages/app/Settings";
 import Integrations from "./pages/app/Integrations";
+import Team from "./pages/app/Team";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/governance/:tab" element={<Governance />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/settings/integrations" element={<Integrations />} />
+            <Route path="/settings/team" element={<Team />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
