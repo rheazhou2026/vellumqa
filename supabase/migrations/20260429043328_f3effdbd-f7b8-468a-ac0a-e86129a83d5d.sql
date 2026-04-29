@@ -1,0 +1,1 @@
+ALTER TABLE public.corrective_actions ADD COLUMN IF NOT EXISTS due_at TIMESTAMP WITH TIME ZONE;

@@ -200,6 +200,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           description: string | null
+          due_at: string | null
           id: string
           organization_id: string | null
           status: string
@@ -211,6 +212,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           description?: string | null
+          due_at?: string | null
           id?: string
           organization_id?: string | null
           status?: string
@@ -222,6 +224,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           description?: string | null
+          due_at?: string | null
           id?: string
           organization_id?: string | null
           status?: string

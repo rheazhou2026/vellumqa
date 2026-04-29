@@ -5,11 +5,12 @@ import PageHeader from "@/components/vellum/PageHeader";
 import StubPanel from "@/components/vellum/StubPanel";
 import CalibrationTab from "@/components/vellum/CalibrationTab";
 import GuidelinesTab from "@/components/vellum/GuidelinesTab";
+import CorrectiveActionsTab from "@/components/vellum/CorrectiveActionsTab";
 
 const TABS = [
   { to: "/governance", label: "Rubric Studio" },
   { to: "/governance/guidelines", label: "Guidelines" },
-  { to: "/governance/actions", label: "Corrective Actions" },
+  { to: "/governance/corrective", label: "Corrective Actions" },
   { to: "/governance/calibration", label: "Calibration" },
 ];
 
@@ -41,7 +42,7 @@ export default function Governance() {
           </NavLink>
         ))}
       </div>
-      {tab === "rubric" || !["guidelines","actions","calibration"].includes(tab) ? (
+      {tab === "rubric" || !["guidelines","corrective","calibration"].includes(tab) ? (
         <div className="p-6 grid lg:grid-cols-[260px_1fr] gap-6 min-h-[600px]">
           <div className="vellum-panel p-3 h-fit">
             <div className="font-heading text-[10px] uppercase tracking-widest text-muted-foreground px-2 py-2">Rubric Domains</div>
@@ -73,6 +74,10 @@ export default function Governance() {
       ) : tab === "guidelines" ? (
         <div className="p-6">
           <GuidelinesTab />
+        </div>
+      ) : tab === "corrective" ? (
+        <div className="p-6">
+          <CorrectiveActionsTab />
         </div>
       ) : (
         <div className="p-6">
