@@ -224,7 +224,7 @@ export default function EvaluationReport() {
               </span>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              {[
+              {([
                 { label: "Source faithfulness", val: run.source_faithfulness_index, dir: "up" },
                 { label: "Differential integrity", val: run.differential_integrity_score, dir: "up" },
                 { label: "Guideline concordance", val: run.guideline_concordance_score, dir: "up" },
@@ -233,15 +233,22 @@ export default function EvaluationReport() {
                 { label: "Uncertainty calibration", val: run.uncertainty_calibration_score, dir: "up" },
                 { label: "Medico-legal exposure", val: run.medico_legal_exposure_score, dir: "down" },
                 { label: "Reviewability", val: run.reviewability_index, dir: "up" },
-                { label: "Evaluator confidence", val: run.evaluator_confidence, dir: "up", pct: true },
-              ].map(({ label, val, dir, pct }: any) => {
-                const display = val == null
-                  ? "—"
-                  : pct
-                    ? `${Math.round((val <= 1 ? val * 100 : val))}%`
-                    : Math.round(val * 10) / 10;
+                { label: "Evaluator confidence", val: run.evaluator_confidence, dir: "up", pct: true,
+                  tip: "How sure the evaluator is about its own scoring (0–100%). 100% means the evaluator had unambiguous evidence for every criterion — rare in real audits." },
+              ] as any[]).map(({ label, val, dir, pct, tip }: any) => {
+                let display: string | number = "—";
+                if (val != null) {
+                  if (pct) {
+                    const raw = Number(val);
+                    const pctVal = raw <= 1 ? raw * 100 : raw;
+                    // Only render "100%" when the model truly emitted 1.0 (or 100); otherwise round but never silently collapse 0.97 → 100.
+                    display = pctVal >= 99.5 && raw < 1 ? "99%" : `${Math.round(pctVal)}%`;
+                  } else {
+                    display = Math.round(Number(val) * 10) / 10;
+                  }
+                }
                 return (
-                  <div key={label} className="border border-border rounded-sm p-3 bg-surface">
+                  <div key={label} className="border border-border rounded-sm p-3 bg-surface" title={tip}>
                     <div className="text-[10px] uppercase tracking-wider text-tertiary flex items-center justify-between">
                       <span>{label}</span>
                       <span className={dir === "down" ? "text-critical" : "text-pass"} title={dir === "down" ? "Higher = worse" : "Higher = better"}>

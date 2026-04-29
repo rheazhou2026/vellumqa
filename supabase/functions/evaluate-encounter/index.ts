@@ -267,7 +267,12 @@ Deno.serve(async (req) => {
           {
             role: "system",
             content:
-              "You are Vellum's rubric scorer. For each criterion, mark applicable/not_applicable/insufficient_data, then result (pass/concern/fail/critical_fail), severity (S1 low → S5 critical/never-event), confidence 0–1, an explanation citing evidence, an evidence quote from the note or source, and a score_delta (negative integer for failures, 0 for pass). Then compute the 9 sub-scores and an overall trust_score (0–100). Be strict: hallucinated medications, missed red flags, omitted allergies → critical_fail / S5.",
+              "You are Vellum's rubric scorer. For each criterion, mark applicable/not_applicable/insufficient_data, then result (pass/concern/fail/critical_fail), severity (S1 low → S5 critical/never-event), confidence as a number between 0 and 1 (e.g. 0.92 = 92%; NEVER report literal 1 unless you are 100% certain — when uncertain use 0.6–0.85), an explanation citing evidence, an evidence quote from the note or source, and a score_delta (negative integer for failures, 0 for pass). Then compute the 9 sub-scores and an overall trust_score (0–100). " +
+              "STRICT RULES — apply broadly, do not narrow to literal wording: " +
+              "(1) 'Symptom inversion' covers BOTH presence/absence flipping AND CLINICAL-CHARACTER inversion. Calling classic ACS symptoms 'atypical', describing 'pressure/heavy' chest pain as 'sharp/stabbing' (or vice versa), reframing severe pain as mild, or labeling textbook red-flag features as benign all count as inversion → fail/S4 (or critical_fail/S5 if it changes triage). " +
+              "(2) 'Medication reconciliation' fails whenever ANY medication mentioned in source (transcript, EHR, labs) is missing from the note's medication list — regardless of whether a 'reconciliation' section exists. First enumerate every drug name in the source, then check note coverage. Missing a chronic med (e.g. lisinopril, anticoagulant, insulin) → fail/S4. " +
+              "(3) 'Allergy status' fails when an allergy is documented in the source but absent from the note. Treat this as an OMISSION HAZARD, not just an inversion → critical_fail/S5 for any drug allergy (penicillin, sulfa, contrast, etc.). The omission_hazard_score must reflect this. " +
+              "(4) Hallucinated medications, missed red flags, fabricated vitals → critical_fail/S5.",
           },
           {
             role: "user",
@@ -548,7 +553,29 @@ Deno.serve(async (req) => {
     }
 
     // ---- Persist ----
-    const claimRows = (claimsOut ?? []).map((c: any) => ({
+    // Deduplicate claims: same normalized (claim_type, claim_text) collapses
+    // to one row, keeping the worst status and highest risk_weight. The
+    // extractor sometimes emits the same claim twice when it appears in
+    // multiple note sections.
+    const STATUS_RANK: Record<string, number> = {
+      contradicted: 4, unsupported: 3, uncertain: 2, supported: 1,
+    };
+    const dedupMap = new Map<string, any>();
+    for (const c of (claimsOut ?? [])) {
+      const text = String(c.claim_text ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+      const type = String(c.claim_type ?? "").trim().toLowerCase();
+      if (!text) continue;
+      const key = `${type}::${text}`;
+      const existing = dedupMap.get(key);
+      if (!existing) {
+        dedupMap.set(key, { ...c });
+      } else {
+        if ((STATUS_RANK[c.status] ?? 0) > (STATUS_RANK[existing.status] ?? 0)) existing.status = c.status;
+        if ((c.risk_weight ?? 0) > (existing.risk_weight ?? 0)) existing.risk_weight = c.risk_weight;
+        if (c.evidence_quote && !existing.evidence_quote) existing.evidence_quote = c.evidence_quote;
+      }
+    }
+    const claimRows = Array.from(dedupMap.values()).map((c: any) => ({
       artifact_id: artifact.id,
       claim_text: String(c.claim_text).slice(0, 2000),
       claim_type: c.claim_type,
