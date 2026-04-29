@@ -15,6 +15,10 @@ import { downloadEvaluationPdf } from "@/components/vellum/EvaluationPdf";
 import GuidelineVersionBanner from "@/components/vellum/GuidelineVersionBanner";
 import FindingFeedback from "@/components/vellum/FindingFeedback";
 import { toast } from "sonner";
+import RubricManifestPanel from "@/components/vellum/RubricManifestPanel";
+import { ConfidenceLegend, formatConfidence } from "@/components/vellum/ConfidenceBadge";
+import CriterionFailureKindBadge from "@/components/vellum/CriterionFailureKindBadge";
+import MedReconciliationCompare from "@/components/vellum/MedReconciliationCompare";
 
 function toCSV(rows: Record<string, unknown>[]): string {
   if (!rows.length) return "";
@@ -34,6 +38,8 @@ export default function EvaluationReport() {
   const [analytics, setAnalytics] = useState<{ vendor: string; avg: number; runs: number; criticalRate: number }[]>([]);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [manifest, setManifest] = useState<any>(null);
+  const [sourceText, setSourceText] = useState("");
+  const [noteText, setNoteText] = useState("");
 
   async function reload() {
     if (!id) return;
@@ -73,6 +79,27 @@ export default function EvaluationReport() {
       if (r?.artifact_id) {
         const { data: cl } = await supabase.from("clinical_claims").select("*").eq("artifact_id", r.artifact_id);
         setClaims(cl ?? []);
+        const { data: art } = await supabase
+          .from("note_artifacts")
+          .select("raw_text")
+          .eq("id", r.artifact_id)
+          .maybeSingle();
+        setNoteText(art?.raw_text ?? "");
+      }
+      const { data: srcRows } = await supabase
+        .from("encounter_sources")
+        .select("source_type,content")
+        .eq("encounter_id", id);
+      if (srcRows?.length) {
+        setSourceText(
+          srcRows
+            .map((s: any) => {
+              const c = s.content;
+              const text = typeof c === "string" ? c : c?.text ?? JSON.stringify(c);
+              return `[${s.source_type}]\n${text}`;
+            })
+            .join("\n\n"),
+        );
       }
       const { data: cm } = await supabase.from("rubric_criteria").select("criterion_id, name, domain_id");
       setCriteria(new Map((cm ?? []).map((c: any) => [c.criterion_id, c])));
@@ -236,17 +263,11 @@ export default function EvaluationReport() {
                 { label: "Evaluator confidence", val: run.evaluator_confidence, dir: "up", pct: true,
                   tip: "How sure the evaluator is about its own scoring (0–100%). 100% means the evaluator had unambiguous evidence for every criterion — rare in real audits." },
               ] as any[]).map(({ label, val, dir, pct, tip }: any) => {
-                let display: string | number = "—";
-                if (val != null) {
-                  if (pct) {
-                    const raw = Number(val);
-                    const pctVal = raw <= 1 ? raw * 100 : raw;
-                    // Only render "100%" when the model truly emitted 1.0 (or 100); otherwise round but never silently collapse 0.97 → 100.
-                    display = pctVal >= 99.5 && raw < 1 ? "99%" : `${Math.round(pctVal)}%`;
-                  } else {
-                    display = Math.round(Number(val) * 10) / 10;
-                  }
-                }
+                const display = pct
+                  ? formatConfidence(val)
+                  : val == null
+                    ? "—"
+                    : Math.round(Number(val) * 10) / 10;
                 return (
                   <div key={label} className="border border-border rounded-sm p-3 bg-surface" title={tip}>
                     <div className="text-[10px] uppercase tracking-wider text-tertiary flex items-center justify-between">
@@ -255,7 +276,9 @@ export default function EvaluationReport() {
                         {dir === "down" ? "↑ worse" : "↑ better"}
                       </span>
                     </div>
-                    <div className="font-display text-2xl mt-1">{display}</div>
+                    <div className="font-display text-2xl mt-1">
+                      {pct ? <ConfidenceLegend value={val} /> : display}
+                    </div>
                   </div>
                 );
               })}
@@ -272,27 +295,7 @@ export default function EvaluationReport() {
           />
         )}
         {manifest && (
-          <section className="vellum-panel p-4">
-            <div className="font-mono text-[10px] uppercase tracking-widest text-tertiary mb-2">
-              Rubric load manifest · scoped to chief complaint
-            </div>
-            <div className="grid grid-cols-2 gap-3 text-[11px]">
-              <div>
-                <div className="text-pass font-mono text-[10px] uppercase tracking-wider mb-1">Loaded</div>
-                <ul className="space-y-0.5 text-foreground/90">
-                  {(manifest.loaded_modules ?? []).map((m: string) => <li key={m}>· {m}</li>)}
-                  {!(manifest.loaded_modules ?? []).length && <li className="text-muted-foreground">none</li>}
-                </ul>
-              </div>
-              <div>
-                <div className="text-tertiary font-mono text-[10px] uppercase tracking-wider mb-1">Excluded (off-topic for this CC)</div>
-                <ul className="space-y-0.5 text-muted-foreground">
-                  {(manifest.excluded_modules ?? []).map((m: string) => <li key={m}>· {m}</li>)}
-                  {!(manifest.excluded_modules ?? []).length && <li>none</li>}
-                </ul>
-              </div>
-            </div>
-          </section>
+          <RubricManifestPanel manifest={manifest} chiefComplaint={encounter?.chief_complaint} />
         )}
         {run && <GuidelineMatchPanel matches={run.guideline_matches} runId={run.id} />}
         {run && <RedFlagPanel findings={run.red_flag_findings} runId={run.id} />}
@@ -332,22 +335,34 @@ export default function EvaluationReport() {
               <div key={dom}>
                 <div className="font-heading text-xs uppercase tracking-wider text-muted-foreground mb-2">Domain · {dom.slice(0, 8)}</div>
                 <ul className="space-y-1.5">
-                  {items.map((r) => (
-                    <li key={r.id} className="border border-border rounded-sm p-2.5 bg-surface">
-                      <div className="flex items-center gap-2">
-                        <SeverityDot severity={r.severity} />
-                        <span className="font-heading text-xs">{criteria.get(r.criterion_id)?.name ?? r.criterion_id}</span>
-                        <span className="ml-auto font-mono text-[10px] uppercase text-muted-foreground">{r.result}</span>
-                      </div>
-                      <div className="text-[11px] text-foreground/80 mt-1">{r.explanation}</div>
-                      {r.evidence?.quote && (
-                        <div className="mt-1.5 text-[11px]">
-                          <EvidenceQuote quote={r.evidence.quote} prefer="any" />
+                  {items.map((r) => {
+                    const cname = criteria.get(r.criterion_id)?.name ?? r.criterion_id;
+                    const isMedRec = /med(ication)?[\s_-]*rec/i.test(`${r.criterion_id ?? ""} ${cname}`);
+                    return (
+                      <li key={r.id} className="border border-border rounded-sm p-2.5 bg-surface">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <SeverityDot severity={r.severity} />
+                          <span className="font-heading text-xs">{cname}</span>
+                          <CriterionFailureKindBadge criterion={{ result: r.result, explanation: r.explanation, criterion_id: r.criterion_id, name: cname }} />
+                          <span className="ml-auto font-mono text-[10px] uppercase text-muted-foreground">{r.result}</span>
                         </div>
-                      )}
-                      {run && <FindingFeedback runId={run.id} findingType="criterion" findingKey={r.criterion_id ?? r.id} compact />}
-                    </li>
-                  ))}
+                        <div className="text-[11px] text-foreground/80 mt-1">{r.explanation}</div>
+                        {r.evidence?.quote && (
+                          <div className="mt-1.5 text-[11px]">
+                            <EvidenceQuote quote={r.evidence.quote} prefer="any" />
+                          </div>
+                        )}
+                        {isMedRec && (
+                          <MedReconciliationCompare
+                            sourceText={sourceText}
+                            noteText={noteText}
+                            defaultOpen={r.result !== "pass"}
+                          />
+                        )}
+                        {run && <FindingFeedback runId={run.id} findingType="criterion" findingKey={r.criterion_id ?? r.id} compact />}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             ))}
