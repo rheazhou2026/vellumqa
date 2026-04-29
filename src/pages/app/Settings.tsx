@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import PageHeader from "@/components/vellum/PageHeader";
 import StubPanel from "@/components/vellum/StubPanel";
@@ -395,10 +396,21 @@ export default function Settings() {
             title="Team"
             description="Invite members, assign Clinician / QA Reviewer / Compliance / Governance / Admin roles."
           />
-          <StubPanel
-            title="Integrations"
-            description="AI vendor webhook URL, EHR/FHIR connection, integration health."
-          />
+          <Link
+            to="/settings/integrations"
+            className="block vellum-panel p-4 hover:border-accent/50 transition group"
+          >
+            <div className="font-mono text-[10px] uppercase tracking-widest text-tertiary">
+              Configured
+            </div>
+            <div className="flex items-center justify-between mt-1">
+              <h3 className="font-display text-base">Integrations</h3>
+              <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-accent transition" />
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              AI vendor webhook URL, EHR/FHIR connection, edge function endpoint.
+            </p>
+          </Link>
         </div>
       </div>
     </div>
