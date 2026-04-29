@@ -528,6 +528,25 @@ Deno.serve(async (req) => {
     );
     const reasoningOut = toolArgs(reasoningResp);
 
+    // Persist the rubric load manifest so reviewers can see exactly which
+    // guideline sources were considered for THIS chief complaint and which
+    // were excluded. This is the audit trail that tells you the cross-refs
+    // weren't the wrong specialty's rules accidentally loaded.
+    let manifestId: string | null = null;
+    {
+      const { data: manifest } = await admin
+        .from("rubric_load_manifests")
+        .insert({
+          encounter_id: encounterId,
+          loaded_modules: (allSources ?? []).map((g: any) => g.abbreviation ?? g.name),
+          excluded_modules: excludedGuidelines,
+          guideline_versions: usedVersions,
+        })
+        .select("id")
+        .single();
+      manifestId = manifest?.id ?? null;
+    }
+
     // ---- Persist ----
     const claimRows = (claimsOut ?? []).map((c: any) => ({
       artifact_id: artifact.id,
