@@ -288,6 +288,7 @@ export default function EncounterDetail() {
                 <ul className="space-y-2">
                   {sortedResults.map((r) => {
                     const meta = criteriaMap.get(r.criterion_id);
+                    const isMedRec = /med(ication)?[\s_-]*rec/i.test(`${r.criterion_id ?? ""} ${meta?.name ?? ""}`);
                     return (
                       <li key={r.id} className={`border rounded-sm p-2.5 ${
                         r.result === "critical_fail" ? "border-critical/40 bg-critical/5"
@@ -297,9 +298,10 @@ export default function EncounterDetail() {
                         <div className="flex items-start gap-2">
                           <SeverityDot severity={r.severity} />
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-heading text-xs">{meta?.name ?? r.criterion_id}</span>
                               <span className="font-mono text-[9px] text-tertiary">{r.criterion_id}</span>
+                              <CriterionFailureKindBadge criterion={{ result: r.result, explanation: r.explanation, criterion_id: r.criterion_id, name: meta?.name }} />
                               <span className="ml-auto font-mono text-[10px] uppercase text-muted-foreground">{r.result}</span>
                             </div>
                             <div className="text-[11px] text-foreground/80 mt-1">{r.explanation}</div>
@@ -307,6 +309,13 @@ export default function EncounterDetail() {
                               <div className="mt-1.5 text-[11px]">
                                 <EvidenceQuote quote={r.evidence.quote} prefer="note" />
                               </div>
+                            )}
+                            {isMedRec && (
+                              <MedReconciliationCompare
+                                sourceText={[sourceText("transcript"), sourceText("ehr"), sourceText("labs")].filter(Boolean).join("\n\n")}
+                                noteText={artifact?.raw_text ?? ""}
+                                defaultOpen={r.result !== "pass"}
+                              />
                             )}
                             <FindingFeedback runId={run.id} findingType="criterion" findingKey={r.criterion_id ?? r.id} compact />
                           </div>
