@@ -291,19 +291,78 @@ Deno.serve(async (req) => {
     const evalOut = toolArgs(scoreResp);
 
     // ---- Stage 3: Clinical reasoning + guideline-aware QA + red flags + bias ----
-    const { data: guidelines } = await admin
+    // Resolve which guideline VERSIONS to evaluate against.
+    // Default: each source's `is_current` version. Override: caller passes
+    // { guideline_version_ids: [...] } to re-run an audit against a historical set.
+    const requestedVersionIds: string[] = Array.isArray(body.guideline_version_ids)
+      ? body.guideline_version_ids.filter((v: any) => UUID_RE.test(String(v)))
+      : [];
+
+    const { data: allSources } = await admin
       .from("guideline_sources")
       .select("id,name,abbreviation,specialty,key_recommendations,red_flag_criteria")
       .eq("active", true)
       .or(`specialty.eq.${encounter.specialty},specialty.is.null`);
 
-    const guidelineBlock = (guidelines ?? [])
+    let versionRows: any[] = [];
+    if (requestedVersionIds.length) {
+      const { data } = await admin
+        .from("guideline_versions")
+        .select("id,source_id,version_string,effective_date,is_current")
+        .in("id", requestedVersionIds);
+      versionRows = data ?? [];
+    } else {
+      const sourceIds = (allSources ?? []).map((g: any) => g.id);
+      if (sourceIds.length) {
+        const { data } = await admin
+          .from("guideline_versions")
+          .select("id,source_id,version_string,effective_date,is_current")
+          .in("source_id", sourceIds)
+          .eq("is_current", true);
+        versionRows = data ?? [];
+      }
+    }
+
+    const sourcesById = new Map((allSources ?? []).map((g: any) => [g.id, g]));
+    const usedVersions = versionRows
+      .map((v: any) => {
+        const src = sourcesById.get(v.source_id);
+        if (!src) return null;
+        return {
+          version_id: v.id,
+          source_id: v.source_id,
+          name: src.name,
+          abbreviation: src.abbreviation,
+          version_string: v.version_string,
+          effective_date: v.effective_date,
+          is_current: v.is_current,
+        };
+      })
+      .filter(Boolean) as any[];
+
+    const activeSources = usedVersions.length
+      ? usedVersions.map((v) => sourcesById.get(v.source_id)).filter(Boolean)
+      : (allSources ?? []);
+
+    const guidelineBlock = (activeSources ?? [])
       .map(
         (g: any) =>
           `${g.abbreviation ?? g.name} (${g.specialty ?? "general"}):\n  Recommendations: ${JSON.stringify(g.key_recommendations ?? [])}\n  Red flags: ${JSON.stringify(g.red_flag_criteria ?? [])}`,
       )
       .join("\n\n")
       .slice(0, 8000);
+
+    // Pull recent reviewer feedback to nudge the scorer away from known false positives.
+    const { data: feedbackStats } = await admin
+      .from("finding_feedback_stats")
+      .select("*");
+    const feedbackHint = (feedbackStats ?? [])
+      .filter((f: any) => f.total_feedback >= 3 && f.false_positive_rate >= 0.3)
+      .map(
+        (f: any) =>
+          `- ${f.finding_type}: ${(f.false_positive_rate * 100).toFixed(0)}% historical false-positive rate (n=${f.total_feedback}). Require stronger evidence.`,
+      )
+      .join("\n");
 
     const reasoningSchema = {
       type: "object",
@@ -411,7 +470,10 @@ Deno.serve(async (req) => {
           {
             role: "system",
             content:
-              "You are Vellum's Clinical Reasoning analyst. Critique the AI-generated note like a senior attending: assess reasoning quality, identify strengths and gaps, cross-reference saved specialty guidelines (mark each recommendation aligned/partial/missing/contradicted with an evidence quote and suggestion), screen the listed red-flag criteria (e.g. SNOOP, sepsis, ACS) and flag missed ones with WHY they matter and a concrete suggested note addition, and detect cognitive biases (premature closure, anchoring, availability, confirmation, framing, search satisficing) — only mark detected=true with concrete evidence and a remediation. Be specific. Cite quotes from the note verbatim.",
+              "You are Vellum's Clinical Reasoning analyst. Critique the AI-generated note like a senior attending: assess reasoning quality, identify strengths and gaps, cross-reference saved specialty guidelines (mark each recommendation aligned/partial/missing/contradicted with an evidence quote and suggestion), screen the listed red-flag criteria (e.g. SNOOP, sepsis, ACS) and flag missed ones with WHY they matter and a concrete suggested note addition, and detect cognitive biases (premature closure, anchoring, availability, confirmation, framing, search satisficing) — only mark detected=true with concrete evidence and a remediation. Be specific. Cite quotes from the note verbatim." +
+              (feedbackHint
+                ? `\n\nREVIEWER FEEDBACK CALIBRATION — these finding types have been over-flagged in past reviews; raise your threshold and demand strong evidence:\n${feedbackHint}`
+                : ""),
           },
           {
             role: "user",
@@ -471,6 +533,7 @@ Deno.serve(async (req) => {
         guideline_matches: reasoningOut.guideline_matches ?? [],
         red_flag_findings: reasoningOut.red_flag_findings ?? [],
         cognitive_biases: (reasoningOut.cognitive_biases ?? []).filter((b: any) => b.detected),
+        guideline_versions_used: usedVersions,
         auto_escalated:
           (evalOut.critical_failures ?? []).length > 0 || (ss.trust_score ?? 100) < 60,
       })
