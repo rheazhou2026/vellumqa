@@ -9,7 +9,10 @@ import GuidelineMatchPanel from "@/components/vellum/GuidelineMatchPanel";
 import RedFlagPanel from "@/components/vellum/RedFlagPanel";
 import CognitiveBiasPanel from "@/components/vellum/CognitiveBiasPanel";
 import { Button } from "@/components/ui/button";
-import { Download, Printer } from "lucide-react";
+import { Download, Printer, FileDown, Loader2 } from "lucide-react";
+import { EvidenceTraceProvider, EvidenceQuote } from "@/components/vellum/EvidenceTrace";
+import { downloadEvaluationPdf } from "@/components/vellum/EvaluationPdf";
+import { toast } from "sonner";
 
 function toCSV(rows: Record<string, unknown>[]): string {
   if (!rows.length) return "";
@@ -25,6 +28,9 @@ export default function EvaluationReport() {
   const [results, setResults] = useState<any[]>([]);
   const [claims, setClaims] = useState<any[]>([]);
   const [criteria, setCriteria] = useState<Map<string, any>>(new Map());
+  const [domains, setDomains] = useState<Record<string, string>>({});
+  const [analytics, setAnalytics] = useState<{ vendor: string; avg: number; runs: number; criticalRate: number }[]>([]);
+  const [pdfBusy, setPdfBusy] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -43,6 +49,36 @@ export default function EvaluationReport() {
       }
       const { data: cm } = await supabase.from("rubric_criteria").select("criterion_id, name, domain_id");
       setCriteria(new Map((cm ?? []).map((c: any) => [c.criterion_id, c])));
+      const { data: doms } = await supabase.from("rubric_domains").select("id, name");
+      setDomains(Object.fromEntries((doms ?? []).map((d: any) => [d.id, d.name])));
+
+      // Analytics snapshot — vendor reliability over recent runs.
+      const { data: hist } = await supabase
+        .from("evaluation_runs")
+        .select("trust_score, critical_failures, encounter_id")
+        .order("completed_at", { ascending: false })
+        .limit(500);
+      if (hist?.length) {
+        const { data: encs } = await supabase
+          .from("encounters")
+          .select("id, ai_vendor")
+          .in("id", hist.map((h: any) => h.encounter_id).filter(Boolean));
+        const vendorById = new Map<string, string>((encs ?? []).map((e: any) => [e.id, e.ai_vendor ?? "unknown"]));
+        const buckets = new Map<string, { sum: number; n: number; crit: number }>();
+        for (const h of hist) {
+          const v = vendorById.get(h.encounter_id) ?? "unknown";
+          const b = buckets.get(v) ?? { sum: 0, n: 0, crit: 0 };
+          b.sum += h.trust_score ?? 0;
+          b.n += 1;
+          if ((h.critical_failures ?? []).length > 0) b.crit += 1;
+          buckets.set(v, b);
+        }
+        setAnalytics(
+          [...buckets.entries()]
+            .map(([vendor, b]) => ({ vendor, avg: b.n ? b.sum / b.n : 0, runs: b.n, criticalRate: b.n ? b.crit / b.n : 0 }))
+            .sort((a, b) => a.avg - b.avg)
+        );
+      }
     })();
   }, [id]);
 
@@ -75,7 +111,35 @@ export default function EvaluationReport() {
     URL.revokeObjectURL(url);
   }
 
+  async function exportPDF() {
+    if (!encounter || !run) {
+      toast.error("Run an evaluation before exporting.");
+      return;
+    }
+    setPdfBusy(true);
+    try {
+      await downloadEvaluationPdf({
+        encounter,
+        run,
+        results,
+        claims,
+        criteriaByCriterionId: Object.fromEntries(
+          [...criteria.entries()].map(([k, v]) => [k, { name: v.name, domain_id: v.domain_id }])
+        ),
+        domains,
+        analytics,
+      });
+      toast.success("Audit PDF generated");
+    } catch (e) {
+      console.error(e);
+      toast.error(e instanceof Error ? e.message : "PDF export failed");
+    } finally {
+      setPdfBusy(false);
+    }
+  }
+
   return (
+    <EvidenceTraceProvider>
     <div>
       <PageHeader
         eyebrow={`AUDIT PACK // ${id?.slice(0, 8)}`}
@@ -88,6 +152,10 @@ export default function EvaluationReport() {
             </Button>
             <Button size="sm" onClick={exportCSV} className="bg-accent text-accent-foreground hover:bg-accent-hover">
               <Download className="h-3.5 w-3.5 mr-1.5" /> Export CSV
+            </Button>
+            <Button size="sm" onClick={exportPDF} disabled={pdfBusy} className="bg-foreground text-background hover:bg-foreground/90">
+              {pdfBusy ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5 mr-1.5" />}
+              Audit PDF
             </Button>
           </div>
         }
@@ -192,7 +260,9 @@ export default function EvaluationReport() {
                       </div>
                       <div className="text-[11px] text-foreground/80 mt-1">{r.explanation}</div>
                       {r.evidence?.quote && (
-                        <div className="mt-1.5 border-l-2 border-accent/40 pl-2 text-[11px] italic text-muted-foreground">"{r.evidence.quote}"</div>
+                        <div className="mt-1.5 text-[11px]">
+                          <EvidenceQuote quote={r.evidence.quote} prefer="any" />
+                        </div>
                       )}
                     </li>
                   ))}
@@ -217,5 +287,6 @@ export default function EvaluationReport() {
         </section>
       </div>
     </div>
+    </EvidenceTraceProvider>
   );
 }

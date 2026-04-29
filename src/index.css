@@ -127,4 +127,15 @@
       linear-gradient(90deg, hsl(var(--border) / 0.4) 1px, transparent 1px);
     background-size: 32px 32px;
   }
+  .vellum-evidence-mark {
+    background: hsl(var(--accent) / 0.28);
+    box-shadow: 0 0 0 2px hsl(var(--accent) / 0.4);
+    color: inherit;
+    border-radius: 2px;
+    animation: vellum-evidence-pulse 1.6s ease-out;
+  }
+  @keyframes vellum-evidence-pulse {
+    0%   { background: hsl(var(--accent) / 0.55); box-shadow: 0 0 0 4px hsl(var(--accent) / 0.55); }
+    100% { background: hsl(var(--accent) / 0.20); box-shadow: 0 0 0 2px hsl(var(--accent) / 0.30); }
+  }
 }
