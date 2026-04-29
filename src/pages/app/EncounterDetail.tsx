@@ -102,7 +102,8 @@ export default function EncounterDetail() {
     { label: "Uncertainty calibration", val: run.uncertainty_calibration_score, dir: "up" as const },
     { label: "Medico-legal exposure", val: run.medico_legal_exposure_score, dir: "down" as const },
     { label: "Reviewability", val: run.reviewability_index, dir: "up" as const },
-    { label: "Evaluator confidence", val: run.evaluator_confidence, dir: "up" as const, pct: true },
+    { label: "Evaluator confidence", val: run.evaluator_confidence, dir: "up" as const, pct: true,
+      tip: "Evaluator self-confidence (0–100%). 100% is rare — it means unambiguous evidence for every criterion." },
   ] : [];
 
   const sortedResults = [...results].sort((a, b) => {
@@ -233,14 +234,19 @@ export default function EncounterDetail() {
               <div className="p-4 border-b border-border">
                 <div className="font-mono text-[10px] uppercase tracking-widest text-tertiary mb-2">Sub-scores</div>
                 <div className="grid grid-cols-2 gap-2">
-                  {subScores.map(({ label, val, dir, pct }: any) => {
-                    const display = val == null
-                      ? "—"
-                      : pct
-                        ? `${Math.round((val <= 1 ? val * 100 : val))}%`
-                        : Math.round(val * 10) / 10;
+                  {subScores.map(({ label, val, dir, pct, tip }: any) => {
+                    let display: string | number = "—";
+                    if (val != null) {
+                      if (pct) {
+                        const raw = Number(val);
+                        const pctVal = raw <= 1 ? raw * 100 : raw;
+                        display = pctVal >= 99.5 && raw < 1 ? "99%" : `${Math.round(pctVal)}%`;
+                      } else {
+                        display = Math.round(Number(val) * 10) / 10;
+                      }
+                    }
                     return (
-                      <div key={label} className="border border-border rounded-sm px-2 py-1.5 bg-surface">
+                      <div key={label} className="border border-border rounded-sm px-2 py-1.5 bg-surface" title={tip}>
                         <div className="text-[9px] uppercase tracking-wider text-tertiary truncate flex items-center justify-between gap-1">
                           <span className="truncate">{label}</span>
                           <span
