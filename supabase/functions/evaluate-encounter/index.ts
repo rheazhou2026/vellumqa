@@ -579,7 +579,8 @@ Deno.serve(async (req) => {
         .from("rubric_load_manifests")
         .insert({
           encounter_id: encounterId,
-          loaded_modules: (allSources ?? []).map((g: any) => g.abbreviation ?? g.name),
+          loaded_modules: loadedEntries.map((e) => e.key),
+          loaded_modules_detail: loadedEntries,
           excluded_modules: excludedGuidelines,
           guideline_versions: usedVersions,
         })
