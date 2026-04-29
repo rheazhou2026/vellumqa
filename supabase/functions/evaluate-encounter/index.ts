@@ -327,19 +327,55 @@ Deno.serve(async (req) => {
       { test: /cancer|chemo|oncolog|neutropen/, needles: /oncology|nccn|neutropenia/i },
     ];
     const matchedTopics = topicMatchers.filter((t) => t.test.test(cc));
-    const allSources = (allSourcesRaw ?? []).filter((g: any) => {
+    const matchedTopicLabels = matchedTopics.map((t) => String(t.test).replace(/^\/|\/[gimsuy]*$/g, ""));
+    type ModuleEntry = {
+      key: string;
+      name: string;
+      specialty: string | null;
+      reason: string;
+      matched_topics: string[];
+    };
+    const loadedEntries: ModuleEntry[] = [];
+    const excludedEntries: ModuleEntry[] = [];
+    for (const g of (allSourcesRaw ?? [])) {
+      const key = g.abbreviation ?? g.name;
       const sameSpecialty = g.specialty === encounter.specialty || !g.specialty;
-      if (!matchedTopics.length) {
-        // No CC keywords matched — fall back to specialty-only filtering.
-        return sameSpecialty;
-      }
       const hay = `${g.name ?? ""} ${g.abbreviation ?? ""} ${JSON.stringify(g.key_recommendations ?? [])} ${JSON.stringify(g.red_flag_criteria ?? [])}`;
-      const topicallyRelevant = matchedTopics.some((t) => t.needles.test(hay));
-      return topicallyRelevant; // cross-specialty allowed when CC matches
-    });
-    const excludedGuidelines = (allSourcesRaw ?? [])
-      .filter((g: any) => !allSources.some((k: any) => k.id === g.id))
-      .map((g: any) => g.abbreviation ?? g.name);
+      const matchedHere = matchedTopics.filter((t) => t.needles.test(hay));
+      const topicLabels = matchedHere.map((t) => String(t.test).replace(/^\/|\/[gimsuy]*$/g, ""));
+
+      let load: boolean;
+      let reason: string;
+      if (!matchedTopics.length) {
+        load = sameSpecialty;
+        reason = sameSpecialty
+          ? `No chief-complaint keywords matched — loaded by specialty (${g.specialty ?? "general"}).`
+          : `No chief-complaint keywords matched and specialty (${g.specialty ?? "general"}) does not match encounter (${encounter.specialty}).`;
+      } else if (matchedHere.length) {
+        load = true;
+        reason = `Chief complaint matched topic(s): ${topicLabels.join(", ")}.`;
+      } else {
+        load = false;
+        reason = `Off-topic for chief complaint "${encounter.chief_complaint ?? ""}" (matched topics: ${matchedTopicLabels.join(", ") || "none"}). Excluded to prevent cross-specialty rubric leakage.`;
+      }
+
+      const entry: ModuleEntry = {
+        key,
+        name: g.name,
+        specialty: g.specialty ?? null,
+        reason,
+        matched_topics: topicLabels,
+      };
+      if (load) loadedEntries.push(entry);
+      else excludedEntries.push(entry);
+    }
+    const allSources = (allSourcesRaw ?? []).filter((g: any) =>
+      loadedEntries.some((e) => e.key === (g.abbreviation ?? g.name)),
+    );
+    // Back-compat: loaded_modules stays a string array of keys; the rich
+    // explanation is persisted in excluded_modules (jsonb) and a new
+    // field on the manifest insert below.
+    const excludedGuidelines = excludedEntries; // jsonb array of objects
 
     let versionRows: any[] = [];
     if (requestedVersionIds.length) {
