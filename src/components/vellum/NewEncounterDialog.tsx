@@ -19,6 +19,48 @@ const SAMPLE_NOTE = `CHIEF COMPLAINT: Chest pain x 2 hrs.\nHPI: 58yo M with HTN 
 
 const SAMPLE_SOURCE = `[transcript]\nClinician: When did the pain start?\nPatient: About two hours ago, like a heavy weight on my chest. It went down my left arm.\nClinician: Any sweating?\nPatient: Yes, a lot.\nClinician: Any history of heart problems?\nPatient: My father had a heart attack at 55. I take lisinopril for blood pressure.\n\n[ehr]\nVitals: BP 158/94, HR 102, SpO2 96%, T 98.6. EKG pending. Troponin pending.`;
 
+type SourceType = "transcript" | "ehr" | "labs";
+const TAG_TO_TYPE: Record<string, SourceType> = {
+  transcript: "transcript",
+  conversation: "transcript",
+  dialogue: "transcript",
+  ehr: "ehr",
+  chart: "ehr",
+  vitals: "ehr",
+  labs: "labs",
+  lab: "labs",
+  results: "labs",
+};
+
+function parseSourceSections(raw: string): { type: SourceType; text: string }[] {
+  const text = raw.trim();
+  if (!text) return [];
+  const re = /\[([a-zA-Z_]+)\]\s*/g;
+  const matches: { tag: string; start: number; end: number }[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    matches.push({ tag: m[1].toLowerCase(), start: m.index, end: m.index + m[0].length });
+  }
+  if (matches.length === 0) {
+    return [{ type: "transcript", text }];
+  }
+  const buckets: Record<SourceType, string[]> = { transcript: [], ehr: [], labs: [] };
+  // text before first tag → transcript
+  const preface = text.slice(0, matches[0].start).trim();
+  if (preface) buckets.transcript.push(preface);
+  for (let i = 0; i < matches.length; i++) {
+    const cur = matches[i];
+    const next = matches[i + 1];
+    const body = text.slice(cur.end, next ? next.start : text.length).trim();
+    if (!body) continue;
+    const type = TAG_TO_TYPE[cur.tag] ?? "transcript";
+    buckets[type].push(body);
+  }
+  return (Object.keys(buckets) as SourceType[])
+    .filter((t) => buckets[t].length > 0)
+    .map((t) => ({ type: t, text: buckets[t].join("\n\n") }));
+}
+
 export default function NewEncounterDialog({ onCreated }: { onCreated?: () => void }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -50,13 +92,15 @@ export default function NewEncounterDialog({ onCreated }: { onCreated?: () => vo
         .single();
       if (encErr) throw encErr;
 
-      // source(s)
+      // source(s) — split by [transcript] / [ehr] / [labs] tags
       if (source.trim()) {
-        await supabase.from("encounter_sources").insert({
+        const sections = parseSourceSections(source);
+        const rows = sections.map((s) => ({
           encounter_id: enc.id,
-          source_type: "transcript",
-          content: { text: source },
-        });
+          source_type: s.type,
+          content: { text: s.text },
+        }));
+        if (rows.length) await supabase.from("encounter_sources").insert(rows);
       }
 
       // note artifact
@@ -129,8 +173,11 @@ export default function NewEncounterDialog({ onCreated }: { onCreated?: () => vo
             <Input className="mt-1" value={vendor} onChange={(e) => setVendor(e.target.value)} />
           </div>
           <div className="col-span-2">
-            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Source evidence (transcript / EHR / labs)</Label>
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Source evidence</Label>
             <Textarea className="mt-1 font-mono text-xs min-h-[140px]" value={source} onChange={(e) => setSource(e.target.value)} />
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Use <code>[transcript]</code>, <code>[ehr]</code>, <code>[labs]</code> tags to separate sections. Untagged text is treated as transcript.
+            </p>
           </div>
           <div className="col-span-2">
             <Label className="text-xs uppercase tracking-wider text-muted-foreground">AI-generated note</Label>
