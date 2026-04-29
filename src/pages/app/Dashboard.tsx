@@ -90,9 +90,11 @@ export default function Dashboard() {
           </div>
         </div>
 
+        <div className="grid lg:grid-cols-2 gap-6">
+          <DomainRadar />
+          <SpecialtyPerformance />
+        </div>
         <div className="grid lg:grid-cols-3 gap-6">
-          <StubPanel title="Domain Score Radar" description="All 10 evaluation domains, current week vs prior week overlay." />
-          <StubPanel title="Specialty Performance" description="Horizontal bars by specialty, sorted worst-first to highlight where review attention is needed." />
           <StubPanel title="Critical Failure Types" description="Top 6 never-event categories from criterion_results, donut visualization." />
         </div>
 
