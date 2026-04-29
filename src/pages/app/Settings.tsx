@@ -392,10 +392,21 @@ export default function Settings() {
         </section>
 
         <div className="space-y-4">
-          <StubPanel
-            title="Team"
-            description="Invite members, assign Clinician / QA Reviewer / Compliance / Governance / Admin roles."
-          />
+          <Link
+            to="/settings/team"
+            className="block vellum-panel p-4 hover:border-accent/50 transition group"
+          >
+            <div className="font-mono text-[10px] uppercase tracking-widest text-tertiary">
+              Configured
+            </div>
+            <div className="flex items-center justify-between mt-1">
+              <h3 className="font-display text-base">Team</h3>
+              <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-accent transition" />
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Invite members and assign Clinician / QA Reviewer / Compliance / Governance / Admin roles.
+            </p>
+          </Link>
           <Link
             to="/settings/integrations"
             className="block vellum-panel p-4 hover:border-accent/50 transition group"
