@@ -14,6 +14,10 @@ import { Loader2, Play, AlertOctagon, FileText, ExternalLink } from "lucide-reac
 import { EvidenceTraceProvider, TraceablePane, EvidenceQuote } from "@/components/vellum/EvidenceTrace";
 import GuidelineVersionBanner from "@/components/vellum/GuidelineVersionBanner";
 import FindingFeedback from "@/components/vellum/FindingFeedback";
+import RubricManifestPanel from "@/components/vellum/RubricManifestPanel";
+import { ConfidenceLegend, formatConfidence } from "@/components/vellum/ConfidenceBadge";
+import CriterionFailureKindBadge, { classifyFailure } from "@/components/vellum/CriterionFailureKindBadge";
+import MedReconciliationCompare from "@/components/vellum/MedReconciliationCompare";
 
 export default function EncounterDetail() {
   const { id } = useParams<{ id: string }>();
@@ -246,16 +250,11 @@ export default function EncounterDetail() {
                 <div className="font-mono text-[10px] uppercase tracking-widest text-tertiary mb-2">Sub-scores</div>
                 <div className="grid grid-cols-2 gap-2">
                   {subScores.map(({ label, val, dir, pct, tip }: any) => {
-                    let display: string | number = "—";
-                    if (val != null) {
-                      if (pct) {
-                        const raw = Number(val);
-                        const pctVal = raw <= 1 ? raw * 100 : raw;
-                        display = pctVal >= 99.5 && raw < 1 ? "99%" : `${Math.round(pctVal)}%`;
-                      } else {
-                        display = Math.round(Number(val) * 10) / 10;
-                      }
-                    }
+                    const display = pct
+                      ? formatConfidence(val)
+                      : val == null
+                        ? "—"
+                        : Math.round(Number(val) * 10) / 10;
                     return (
                       <div key={label} className="border border-border rounded-sm px-2 py-1.5 bg-surface" title={tip}>
                         <div className="text-[9px] uppercase tracking-wider text-tertiary truncate flex items-center justify-between gap-1">
@@ -267,7 +266,11 @@ export default function EncounterDetail() {
                             {dir === "down" ? "↑!" : "↑"}
                           </span>
                         </div>
-                        <div className="font-mono text-sm">{display}</div>
+                        {pct ? (
+                          <div className="font-mono text-sm"><ConfidenceLegend value={val} compact /></div>
+                        ) : (
+                          <div className="font-mono text-sm">{display}</div>
+                        )}
                       </div>
                     );
                   })}
@@ -276,31 +279,7 @@ export default function EncounterDetail() {
 
               {manifest && (
                 <div className="p-4 border-b border-border">
-                  <div className="font-mono text-[10px] uppercase tracking-widest text-tertiary mb-2 flex items-center justify-between">
-                    <span>Rubric manifest · CC scoping</span>
-                    <span className="text-muted-foreground normal-case tracking-normal">
-                      {(manifest.loaded_modules ?? []).length} loaded · {(manifest.excluded_modules ?? []).length} excluded
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-[10px]">
-                    <div className="border border-border rounded-sm p-2 bg-surface">
-                      <div className="text-pass font-mono uppercase tracking-wider mb-1">Loaded</div>
-                      <ul className="space-y-0.5 text-foreground/90 max-h-32 overflow-auto">
-                        {(manifest.loaded_modules ?? []).map((m: string) => <li key={m} className="truncate" title={m}>· {m}</li>)}
-                        {!(manifest.loaded_modules ?? []).length && <li className="text-muted-foreground">none</li>}
-                      </ul>
-                    </div>
-                    <div className="border border-border rounded-sm p-2 bg-surface">
-                      <div className="text-tertiary font-mono uppercase tracking-wider mb-1" title="Excluded as off-topic for this chief complaint">Excluded</div>
-                      <ul className="space-y-0.5 text-muted-foreground max-h-32 overflow-auto">
-                        {(manifest.excluded_modules ?? []).map((m: any) => {
-                          const label = typeof m === "string" ? m : (m?.name ?? m?.abbreviation ?? JSON.stringify(m));
-                          return <li key={label} className="truncate" title={label}>· {label}</li>;
-                        })}
-                        {!(manifest.excluded_modules ?? []).length && <li>none</li>}
-                      </ul>
-                    </div>
-                  </div>
+                  <RubricManifestPanel manifest={manifest} chiefComplaint={encounter.chief_complaint} />
                 </div>
               )}
 
