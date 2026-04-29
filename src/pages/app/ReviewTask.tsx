@@ -306,8 +306,8 @@ export default function ReviewTask() {
         <section className="vellum-panel">
           <div className="px-4 py-3 border-b border-border flex items-center justify-between">
             <div className="font-heading text-xs uppercase tracking-wider">AI note</div>
-            {artifact?.model_id && (
-              <span className="font-mono text-[10px] text-tertiary">{artifact.model_id}</span>
+            {artifact?.artifact_type && (
+              <span className="font-mono text-[10px] text-tertiary uppercase">{artifact.artifact_type}</span>
             )}
           </div>
           <div className="p-4 max-h-[70vh] overflow-auto">
@@ -315,7 +315,7 @@ export default function ReviewTask() {
               <div className="text-xs text-muted-foreground">No AI note artifact attached.</div>
             ) : (
               <pre className="font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-foreground/90">
-                {artifact.note_text ?? artifact.content ?? "—"}
+                {artifact.raw_text ?? (typeof artifact.content === "string" ? artifact.content : JSON.stringify(artifact.content, null, 2))}
               </pre>
             )}
           </div>
@@ -339,7 +339,7 @@ export default function ReviewTask() {
                 return (
                   <div key={r.id} className="border border-border rounded-sm p-2.5 bg-surface">
                     <div className="flex items-start gap-2">
-                      <SeverityDot level={r.severity ?? meta.severity_level ?? "S1"} />
+                      <SeverityDot severity={r.severity ?? meta.severity_level ?? "S1"} />
                       <div className="min-w-0 flex-1">
                         <div className="font-mono text-[10px] text-tertiary truncate">{r.criterion_id}</div>
                         <div className="text-xs text-foreground mt-0.5">{meta.name ?? r.criterion_id}</div>
