@@ -4,6 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import PageHeader from "@/components/vellum/PageHeader";
 import TrustScorePill from "@/components/vellum/TrustScorePill";
 import SeverityDot from "@/components/vellum/SeverityDot";
+import ClinicalReasoningPanel from "@/components/vellum/ClinicalReasoningPanel";
+import GuidelineMatchPanel from "@/components/vellum/GuidelineMatchPanel";
+import RedFlagPanel from "@/components/vellum/RedFlagPanel";
+import CognitiveBiasPanel from "@/components/vellum/CognitiveBiasPanel";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 import { Loader2, Play, AlertOctagon, FileText, ExternalLink } from "lucide-react";
@@ -270,6 +274,17 @@ export default function EncounterDetail() {
           )}
         </div>
       </div>
+
+      {run && (
+        <div className="px-6 pb-10 space-y-4">
+          <ClinicalReasoningPanel run={run} />
+          <div className="grid lg:grid-cols-2 gap-4">
+            <GuidelineMatchPanel matches={run.guideline_matches} />
+            <RedFlagPanel findings={run.red_flag_findings} />
+          </div>
+          <CognitiveBiasPanel biases={run.cognitive_biases} />
+        </div>
+      )}
     </div>
   );
 }

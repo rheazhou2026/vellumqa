@@ -4,6 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import PageHeader from "@/components/vellum/PageHeader";
 import TrustScorePill from "@/components/vellum/TrustScorePill";
 import SeverityDot from "@/components/vellum/SeverityDot";
+import ClinicalReasoningPanel from "@/components/vellum/ClinicalReasoningPanel";
+import GuidelineMatchPanel from "@/components/vellum/GuidelineMatchPanel";
+import RedFlagPanel from "@/components/vellum/RedFlagPanel";
+import CognitiveBiasPanel from "@/components/vellum/CognitiveBiasPanel";
 import { Button } from "@/components/ui/button";
 import { Download, Printer } from "lucide-react";
 
@@ -139,6 +143,11 @@ export default function EvaluationReport() {
             </div>
           </section>
         )}
+
+        {run && <ClinicalReasoningPanel run={run} />}
+        {run && <GuidelineMatchPanel matches={run.guideline_matches} />}
+        {run && <RedFlagPanel findings={run.red_flag_findings} />}
+        {run && <CognitiveBiasPanel biases={run.cognitive_biases} />}
 
         {/* Claim ledger */}
         <section className="vellum-panel p-6">
