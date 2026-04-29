@@ -1,5 +1,6 @@
 import { BookOpen } from "lucide-react";
 import { EvidenceQuote } from "@/components/vellum/EvidenceTrace";
+import FindingFeedback from "@/components/vellum/FindingFeedback";
 
 const STATUS: Record<string, { tone: string; label: string }> = {
   aligned: { tone: "text-pass border-pass/40 bg-pass/5", label: "ALIGNED" },
@@ -8,7 +9,7 @@ const STATUS: Record<string, { tone: string; label: string }> = {
   contradicted: { tone: "text-critical border-critical/40 bg-critical/5", label: "CONTRADICTED" },
 };
 
-export default function GuidelineMatchPanel({ matches }: { matches: any[] | null | undefined }) {
+export default function GuidelineMatchPanel({ matches, runId }: { matches: any[] | null | undefined; runId?: string }) {
   if (!matches || matches.length === 0) return null;
   const grouped = matches.reduce<Record<string, any[]>>((acc, m) => {
     const k = m.guideline ?? "Other";
@@ -47,6 +48,12 @@ export default function GuidelineMatchPanel({ matches }: { matches: any[] | null
                     {m.suggestion && (
                       <div className="mt-1 text-[11px] text-accent">→ {m.suggestion}</div>
                     )}
+                    <FindingFeedback
+                      runId={runId}
+                      findingType="guideline_match"
+                      findingKey={`${g}::${m.recommendation_id ?? m.recommendation ?? i}`}
+                      compact
+                    />
                   </li>
                 );
               })}

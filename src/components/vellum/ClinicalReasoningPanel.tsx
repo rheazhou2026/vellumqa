@@ -1,5 +1,6 @@
 import { CheckCircle2, AlertTriangle, Brain } from "lucide-react";
 import { EvidenceQuote } from "@/components/vellum/EvidenceTrace";
+import FindingFeedback from "@/components/vellum/FindingFeedback";
 
 const QUALITY_TONE: Record<string, string> = {
   excellent: "text-pass border-pass/40 bg-pass/5",
@@ -53,6 +54,7 @@ export default function ClinicalReasoningPanel({ run }: { run: any }) {
                     <EvidenceQuote quote={s.evidence_quote} prefer="note" />
                   </div>
                 )}
+                <FindingFeedback runId={run.id} findingType="reasoning_strength" findingKey={s.title ?? `s-${i}`} compact />
               </li>
             ))}
             {!run.reasoning_strengths?.length && <li className="text-xs text-tertiary">None identified.</li>}
@@ -79,6 +81,7 @@ export default function ClinicalReasoningPanel({ run }: { run: any }) {
                     <EvidenceQuote quote={g.evidence_quote} prefer="note" />
                   </div>
                 )}
+                <FindingFeedback runId={run.id} findingType="reasoning_gap" findingKey={g.title ?? `g-${i}`} compact />
               </li>
             ))}
             {!run.reasoning_gaps?.length && <li className="text-xs text-tertiary">No reasoning gaps detected.</li>}

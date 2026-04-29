@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 import { Loader2, Play, AlertOctagon, FileText, ExternalLink } from "lucide-react";
 import { EvidenceTraceProvider, TraceablePane, EvidenceQuote } from "@/components/vellum/EvidenceTrace";
+import GuidelineVersionBanner from "@/components/vellum/GuidelineVersionBanner";
+import FindingFeedback from "@/components/vellum/FindingFeedback";
 
 export default function EncounterDetail() {
   const { id } = useParams<{ id: string }>();
@@ -265,6 +267,7 @@ export default function EncounterDetail() {
                                 <EvidenceQuote quote={r.evidence.quote} prefer="note" />
                               </div>
                             )}
+                            <FindingFeedback runId={run.id} findingType="criterion" findingKey={r.criterion_id ?? r.id} compact />
                           </div>
                         </div>
                       </li>
@@ -279,12 +282,17 @@ export default function EncounterDetail() {
 
       {run && (
         <div className="px-6 pb-10 space-y-4">
+          <GuidelineVersionBanner
+            encounterId={id!}
+            used={(run.guideline_versions_used as any[]) ?? []}
+            onReran={load}
+          />
           <ClinicalReasoningPanel run={run} />
           <div className="grid lg:grid-cols-2 gap-4">
-            <GuidelineMatchPanel matches={run.guideline_matches} />
-            <RedFlagPanel findings={run.red_flag_findings} />
+            <GuidelineMatchPanel matches={run.guideline_matches} runId={run.id} />
+            <RedFlagPanel findings={run.red_flag_findings} runId={run.id} />
           </div>
-          <CognitiveBiasPanel biases={run.cognitive_biases} />
+          <CognitiveBiasPanel biases={run.cognitive_biases} runId={run.id} />
         </div>
       )}
     </div>
