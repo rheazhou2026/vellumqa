@@ -4,6 +4,7 @@ import PageHeader from "@/components/vellum/PageHeader";
 import StubPanel from "@/components/vellum/StubPanel";
 import DomainRadar from "@/components/vellum/DomainRadar";
 import SpecialtyPerformance from "@/components/vellum/SpecialtyPerformance";
+import CriticalFailureTypes from "@/components/vellum/CriticalFailureTypes";
 import { AlertTriangle, Activity, FileCheck2, AlertOctagon, CircleSlash } from "lucide-react";
 
 type Kpi = { label: string; value: string; trend?: string; icon: React.ComponentType<{ className?: string }>; tone?: "default" | "critical" | "high" | "moderate" | "pass" };
@@ -96,9 +97,7 @@ export default function Dashboard() {
           <DomainRadar />
           <SpecialtyPerformance />
         </div>
-        <div className="grid lg:grid-cols-3 gap-6">
-          <StubPanel title="Critical Failure Types" description="Top 6 never-event categories from criterion_results, donut visualization." />
-        </div>
+        <CriticalFailureTypes />
 
         <div className="vellum-panel">
           <div className="px-6 py-4 border-b border-border flex items-baseline justify-between">
