@@ -1056,6 +1056,7 @@ export type Database = {
           guideline_versions: Json | null
           id: string
           loaded_modules: string[] | null
+          loaded_modules_detail: Json
         }
         Insert: {
           assembled_at?: string
@@ -1064,6 +1065,7 @@ export type Database = {
           guideline_versions?: Json | null
           id?: string
           loaded_modules?: string[] | null
+          loaded_modules_detail?: Json
         }
         Update: {
           assembled_at?: string
@@ -1072,6 +1074,7 @@ export type Database = {
           guideline_versions?: Json | null
           id?: string
           loaded_modules?: string[] | null
+          loaded_modules_detail?: Json
         }
         Relationships: [
           {
