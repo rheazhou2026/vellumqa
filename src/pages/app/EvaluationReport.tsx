@@ -19,6 +19,7 @@ import RubricManifestPanel from "@/components/vellum/RubricManifestPanel";
 import { ConfidenceLegend, formatConfidence } from "@/components/vellum/ConfidenceBadge";
 import CriterionFailureKindBadge from "@/components/vellum/CriterionFailureKindBadge";
 import MedReconciliationCompare from "@/components/vellum/MedReconciliationCompare";
+import SafePlanSuggestion from "@/components/vellum/SafePlanSuggestion";
 
 function toCSV(rows: Record<string, unknown>[]): string {
   if (!rows.length) return "";
@@ -287,6 +288,15 @@ export default function EvaluationReport() {
         )}
 
         {run && <ClinicalReasoningPanel run={run} />}
+        {run && (
+          <SafePlanSuggestion
+            specialty={encounter?.specialty}
+            chiefComplaint={encounter?.chief_complaint}
+            sourceText={sourceText}
+            noteText={noteText}
+            criticalFailures={run.critical_failures}
+          />
+        )}
         {run && (
           <GuidelineVersionBanner
             encounterId={id!}

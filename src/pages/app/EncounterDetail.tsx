@@ -18,6 +18,7 @@ import RubricManifestPanel from "@/components/vellum/RubricManifestPanel";
 import { ConfidenceLegend, formatConfidence } from "@/components/vellum/ConfidenceBadge";
 import CriterionFailureKindBadge, { classifyFailure } from "@/components/vellum/CriterionFailureKindBadge";
 import MedReconciliationCompare from "@/components/vellum/MedReconciliationCompare";
+import SafePlanSuggestion from "@/components/vellum/SafePlanSuggestion";
 
 export default function EncounterDetail() {
   const { id } = useParams<{ id: string }>();
@@ -332,6 +333,13 @@ export default function EncounterDetail() {
 
       {run && (
         <div className="px-6 pb-10 space-y-4">
+          <SafePlanSuggestion
+            specialty={encounter.specialty}
+            chiefComplaint={encounter.chief_complaint}
+            sourceText={[sourceText("transcript"), sourceText("ehr"), sourceText("labs")].filter(Boolean).join("\n\n")}
+            noteText={artifact?.raw_text ?? ""}
+            criticalFailures={run.critical_failures}
+          />
           <GuidelineVersionBanner
             encounterId={id!}
             used={(run.guideline_versions_used as any[]) ?? []}

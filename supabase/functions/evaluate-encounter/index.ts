@@ -272,7 +272,12 @@ Deno.serve(async (req) => {
               "(1) 'Symptom inversion' covers BOTH presence/absence flipping AND CLINICAL-CHARACTER inversion. Calling classic ACS symptoms 'atypical', describing 'pressure/heavy' chest pain as 'sharp/stabbing' (or vice versa), reframing severe pain as mild, or labeling textbook red-flag features as benign all count as inversion → fail/S4 (or critical_fail/S5 if it changes triage). " +
               "(2) 'Medication reconciliation' fails whenever ANY medication mentioned in source (transcript, EHR, labs) is missing from the note's medication list — regardless of whether a 'reconciliation' section exists. First enumerate every drug name in the source, then check note coverage. Missing a chronic med (e.g. lisinopril, anticoagulant, insulin) → fail/S4. " +
               "(3) 'Allergy status' fails when an allergy is documented in the source but absent from the note. Treat this as an OMISSION HAZARD, not just an inversion → critical_fail/S5 for any drug allergy (penicillin, sulfa, contrast, etc.). The omission_hazard_score must reflect this. " +
-              "(4) Hallucinated medications, missed red flags, fabricated vitals → critical_fail/S5.",
+              "(4) Hallucinated medications, missed red flags, fabricated vitals → critical_fail/S5. " +
+              "(5) CONSENT FABRICATION IS TIERED BY CLINICAL CONSEQUENCE — do not treat all unsupported consent language as a never-event. " +
+              "    • Treatment / procedure / surgery / anesthesia consent without source backing → ALL_CONSENT_FAB_TREATMENT_001, critical_fail/S5, score_delta ≈ -25. " +
+              "    • Recording / AI scribe / ambient capture consent without source backing → ALL_CONSENT_FAB_RECORDING_001, fail/S4, score_delta ≈ -15 (privacy issue, not a clinical never-event). " +
+              "    • Generic comprehension language like 'patient verbalized understanding', 'patient agrees with plan', 'questions answered' → ALL_CONSENT_FABRICATION_001, concern/S3 at most, score_delta ≈ -5 to -8. Do NOT mark these critical_fail. " +
+              "    Map each unsupported consent statement to the SINGLE most specific criterion above; do not double-count.",
           },
           {
             role: "user",
