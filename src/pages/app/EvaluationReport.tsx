@@ -335,22 +335,34 @@ export default function EvaluationReport() {
               <div key={dom}>
                 <div className="font-heading text-xs uppercase tracking-wider text-muted-foreground mb-2">Domain · {dom.slice(0, 8)}</div>
                 <ul className="space-y-1.5">
-                  {items.map((r) => (
-                    <li key={r.id} className="border border-border rounded-sm p-2.5 bg-surface">
-                      <div className="flex items-center gap-2">
-                        <SeverityDot severity={r.severity} />
-                        <span className="font-heading text-xs">{criteria.get(r.criterion_id)?.name ?? r.criterion_id}</span>
-                        <span className="ml-auto font-mono text-[10px] uppercase text-muted-foreground">{r.result}</span>
-                      </div>
-                      <div className="text-[11px] text-foreground/80 mt-1">{r.explanation}</div>
-                      {r.evidence?.quote && (
-                        <div className="mt-1.5 text-[11px]">
-                          <EvidenceQuote quote={r.evidence.quote} prefer="any" />
+                  {items.map((r) => {
+                    const cname = criteria.get(r.criterion_id)?.name ?? r.criterion_id;
+                    const isMedRec = /med(ication)?[\s_-]*rec/i.test(`${r.criterion_id ?? ""} ${cname}`);
+                    return (
+                      <li key={r.id} className="border border-border rounded-sm p-2.5 bg-surface">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <SeverityDot severity={r.severity} />
+                          <span className="font-heading text-xs">{cname}</span>
+                          <CriterionFailureKindBadge criterion={{ result: r.result, explanation: r.explanation, criterion_id: r.criterion_id, name: cname }} />
+                          <span className="ml-auto font-mono text-[10px] uppercase text-muted-foreground">{r.result}</span>
                         </div>
-                      )}
-                      {run && <FindingFeedback runId={run.id} findingType="criterion" findingKey={r.criterion_id ?? r.id} compact />}
-                    </li>
-                  ))}
+                        <div className="text-[11px] text-foreground/80 mt-1">{r.explanation}</div>
+                        {r.evidence?.quote && (
+                          <div className="mt-1.5 text-[11px]">
+                            <EvidenceQuote quote={r.evidence.quote} prefer="any" />
+                          </div>
+                        )}
+                        {isMedRec && (
+                          <MedReconciliationCompare
+                            sourceText={sourceText}
+                            noteText={noteText}
+                            defaultOpen={r.result !== "pass"}
+                          />
+                        )}
+                        {run && <FindingFeedback runId={run.id} findingType="criterion" findingKey={r.criterion_id ?? r.id} compact />}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             ))}
