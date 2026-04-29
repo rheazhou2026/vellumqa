@@ -94,16 +94,16 @@ export default function EncounterDetail() {
   };
 
   const subScores = run ? [
-    ["Source faithfulness", run.source_faithfulness_index],
-    ["Differential integrity", run.differential_integrity_score],
-    ["Guideline concordance", run.guideline_concordance_score],
-    ["Omission hazard", run.omission_hazard_score],
-    ["Patient-safety escalation", run.patient_safety_escalation_score],
-    ["Uncertainty calibration", run.uncertainty_calibration_score],
-    ["Medico-legal exposure", run.medico_legal_exposure_score],
-    ["Reviewability", run.reviewability_index],
-    ["Evaluator confidence", run.evaluator_confidence],
-  ] as [string, number | null][] : [];
+    { label: "Source faithfulness", val: run.source_faithfulness_index, dir: "up" as const },
+    { label: "Differential integrity", val: run.differential_integrity_score, dir: "up" as const },
+    { label: "Guideline concordance", val: run.guideline_concordance_score, dir: "up" as const },
+    { label: "Omission hazard", val: run.omission_hazard_score, dir: "down" as const },
+    { label: "Patient-safety escalation", val: run.patient_safety_escalation_score, dir: "down" as const },
+    { label: "Uncertainty calibration", val: run.uncertainty_calibration_score, dir: "up" as const },
+    { label: "Medico-legal exposure", val: run.medico_legal_exposure_score, dir: "down" as const },
+    { label: "Reviewability", val: run.reviewability_index, dir: "up" as const },
+    { label: "Evaluator confidence", val: run.evaluator_confidence, dir: "up" as const, pct: true },
+  ] : [];
 
   const sortedResults = [...results].sort((a, b) => {
     const order = { critical_fail: 0, fail: 1, concern: 2, pass: 3 } as Record<string, number>;
@@ -233,12 +233,27 @@ export default function EncounterDetail() {
               <div className="p-4 border-b border-border">
                 <div className="font-mono text-[10px] uppercase tracking-widest text-tertiary mb-2">Sub-scores</div>
                 <div className="grid grid-cols-2 gap-2">
-                  {subScores.map(([label, val]) => (
-                    <div key={label} className="border border-border rounded-sm px-2 py-1.5 bg-surface">
-                      <div className="text-[9px] uppercase tracking-wider text-tertiary truncate">{label}</div>
-                      <div className="font-mono text-sm">{val != null ? Math.round(val * 10) / 10 : "—"}</div>
-                    </div>
-                  ))}
+                  {subScores.map(({ label, val, dir, pct }: any) => {
+                    const display = val == null
+                      ? "—"
+                      : pct
+                        ? `${Math.round((val <= 1 ? val * 100 : val))}%`
+                        : Math.round(val * 10) / 10;
+                    return (
+                      <div key={label} className="border border-border rounded-sm px-2 py-1.5 bg-surface">
+                        <div className="text-[9px] uppercase tracking-wider text-tertiary truncate flex items-center justify-between gap-1">
+                          <span className="truncate">{label}</span>
+                          <span
+                            className={dir === "down" ? "text-critical" : "text-pass"}
+                            title={dir === "down" ? "Higher = worse" : "Higher = better"}
+                          >
+                            {dir === "down" ? "↑!" : "↑"}
+                          </span>
+                        </div>
+                        <div className="font-mono text-sm">{display}</div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
