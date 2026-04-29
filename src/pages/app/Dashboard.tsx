@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import PageHeader from "@/components/vellum/PageHeader";
-import StubPanel from "@/components/vellum/StubPanel";
 import DomainRadar from "@/components/vellum/DomainRadar";
 import SpecialtyPerformance from "@/components/vellum/SpecialtyPerformance";
 import CriticalFailureTypes from "@/components/vellum/CriticalFailureTypes";
+import TrustScoreTimeSeries from "@/components/vellum/TrustScoreTimeSeries";
+import RealtimeRiskFeed from "@/components/vellum/RealtimeRiskFeed";
 import { AlertTriangle, Activity, FileCheck2, AlertOctagon, CircleSlash } from "lucide-react";
 
 type Kpi = { label: string; value: string; trend?: string; icon: React.ComponentType<{ className?: string }>; tone?: "default" | "critical" | "high" | "moderate" | "pass" };
@@ -84,12 +85,12 @@ export default function Dashboard() {
               </div>
               <div className="font-mono text-[10px] uppercase tracking-widest text-tertiary">CHART</div>
             </div>
-            <StubPanel title="Trust score time-series" description="Multi-series Recharts line chart by specialty, annotated with model and guideline update events. Wires up after the first batch of evaluations is recorded." status="WIRES NEXT" />
+            <TrustScoreTimeSeries />
           </div>
           <div className="lg:col-span-2 vellum-panel p-6 min-h-[320px]">
             <div className="font-heading text-xs uppercase tracking-wider text-muted-foreground mb-1">Live Risk Events</div>
             <h2 className="font-display text-2xl mb-4">Critical activity</h2>
-            <StubPanel title="Realtime risk feed" description="Subscribes to risk_events via Supabase Realtime — color-coded severity, encounter ID, action required." status="REALTIME WIRED" />
+            <RealtimeRiskFeed />
           </div>
         </div>
 
