@@ -1,133 +1,95 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Syne:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Clinical QA / Safety Review — Editorial design system.
-   Tone: trustworthy, calm, archival. Looks like a hospital QA dashboard
-   crossed with an editorial publication. All colors HSL.
+/* VELLUM — Clinical AI Trust Infrastructure design system.
+   Tone: precision medical instrument. Bloomberg Terminal seriousness,
+   pathology report clarity, regulator-grade authority. Dark mode only.
+   All colors HSL.
 */
 
 @layer base {
   :root {
-    /* Surfaces — warm clinical paper */
-    --background: 38 30% 97%;
-    --foreground: 215 35% 12%;
+    /* Vellum core surfaces — deep near-black */
+    --background: 220 18% 5%;          /* #0A0C0F */
+    --foreground: 220 14% 92%;         /* #E8EBF0 */
 
-    --surface: 0 0% 100%;
-    --surface-muted: 38 25% 94%;
+    --surface: 220 16% 8%;             /* #111318 */
+    --surface-muted: 220 14% 11%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 215 35% 12%;
+    --card: 220 16% 8%;
+    --card-foreground: 220 14% 92%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 215 35% 12%;
+    --popover: 220 16% 9%;
+    --popover-foreground: 220 14% 92%;
 
-    /* Primary — deep clinical ink */
-    --primary: 215 55% 18%;
-    --primary-foreground: 38 40% 97%;
+    --primary: 220 14% 92%;
+    --primary-foreground: 220 18% 5%;
 
-    /* Secondary — slate parchment */
-    --secondary: 38 22% 91%;
-    --secondary-foreground: 215 35% 18%;
+    --secondary: 220 14% 13%;
+    --secondary-foreground: 220 14% 92%;
 
-    --muted: 38 18% 93%;
-    --muted-foreground: 215 14% 40%;
+    --muted: 220 12% 14%;
+    --muted-foreground: 220 10% 58%;   /* #8B92A0 */
+    --tertiary: 220 10% 36%;            /* #525A68 */
 
-    /* Accent — oxidized teal (clinical / archival) */
-    --accent: 184 38% 32%;
-    --accent-foreground: 38 40% 97%;
+    --accent: 232 56% 60%;              /* #5E6AD2 indigo */
+    --accent-foreground: 220 14% 96%;
+    --accent-hover: 232 67% 66%;        /* #6B78E5 */
 
-    /* Risk palette — calibrated for severity */
-    --critical: 358 68% 44%;
-    --critical-foreground: 38 40% 97%;
-    --critical-soft: 358 70% 95%;
+    /* Risk palette — Vellum severity */
+    --critical: 4 100% 59%;             /* #FF3B30 S5 */
+    --critical-foreground: 220 14% 96%;
+    --critical-bg: 4 50% 7%;            /* #1A0808 */
 
-    --important: 28 85% 48%;
-    --important-foreground: 38 40% 97%;
-    --important-soft: 28 80% 94%;
+    --high: 16 100% 60%;                /* #FF6B35 S4 */
+    --high-foreground: 220 14% 96%;
+    --high-bg: 16 50% 7%;
 
-    --safe: 152 45% 32%;
-    --safe-foreground: 38 40% 97%;
-    --safe-soft: 152 40% 92%;
+    --moderate: 43 100% 50%;            /* #FFB800 S3 */
+    --moderate-foreground: 220 18% 5%;
+    --moderate-bg: 43 50% 7%;
 
-    --info: 215 55% 40%;
-    --info-soft: 215 55% 94%;
+    --pass: 135 65% 51%;                /* #30D158 */
+    --pass-foreground: 220 18% 5%;
+    --pass-bg: 135 50% 8%;
 
-    --destructive: 358 68% 44%;
-    --destructive-foreground: 38 40% 97%;
+    --info: 211 100% 50%;               /* #007AFF */
+    --info-bg: 211 50% 9%;
 
-    --border: 38 18% 86%;
-    --input: 38 18% 86%;
-    --ring: 184 38% 32%;
+    --destructive: 4 100% 59%;
+    --destructive-foreground: 220 14% 96%;
 
-    --radius: 0.625rem;
+    --border: 220 16% 13%;              /* #1E2228 */
+    --border-strong: 220 14% 20%;       /* #2C3340 */
+    --input: 220 16% 13%;
+    --ring: 232 56% 60%;
 
-    /* Editorial gradients & shadows */
-    --gradient-paper: linear-gradient(180deg, hsl(38 30% 98%) 0%, hsl(38 25% 95%) 100%);
-    --gradient-ink: linear-gradient(135deg, hsl(215 55% 18%) 0%, hsl(215 50% 28%) 100%);
-    --gradient-risk: linear-gradient(135deg, hsl(358 68% 44%) 0%, hsl(28 85% 48%) 100%);
-    --gradient-safe: linear-gradient(135deg, hsl(152 45% 32%) 0%, hsl(184 38% 32%) 100%);
+    --radius: 0.25rem;                  /* 4px max on data */
 
-    --shadow-paper: 0 1px 0 hsl(215 35% 12% / 0.04), 0 1px 3px hsl(215 35% 12% / 0.05);
-    --shadow-elevated: 0 8px 24px -8px hsl(215 35% 18% / 0.18), 0 2px 6px hsl(215 35% 18% / 0.06);
-    --shadow-glow-risk: 0 0 0 1px hsl(358 68% 44% / 0.25), 0 8px 24px -8px hsl(358 68% 44% / 0.3);
-
-    --transition-smooth: cubic-bezier(0.22, 1, 0.36, 1);
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 220 18% 4%;
+    --sidebar-foreground: 220 14% 80%;
+    --sidebar-primary: 232 56% 60%;
+    --sidebar-primary-foreground: 220 14% 96%;
+    --sidebar-accent: 220 16% 11%;
+    --sidebar-accent-foreground: 220 14% 96%;
+    --sidebar-border: 220 16% 13%;
+    --sidebar-ring: 232 56% 60%;
   }
 
+  /* Force dark — Vellum is dark-only */
   .dark {
-    --background: 215 35% 8%;
-    --foreground: 38 30% 95%;
-    --surface: 215 30% 11%;
-    --surface-muted: 215 25% 14%;
-    --card: 215 30% 11%;
-    --card-foreground: 38 30% 95%;
-    --popover: 215 30% 11%;
-    --popover-foreground: 38 30% 95%;
-    --primary: 38 30% 95%;
-    --primary-foreground: 215 55% 18%;
-    --secondary: 215 25% 18%;
-    --secondary-foreground: 38 30% 95%;
-    --muted: 215 25% 16%;
-    --muted-foreground: 215 14% 60%;
-    --accent: 184 38% 45%;
-    --accent-foreground: 215 35% 12%;
-    --critical: 358 68% 55%;
-    --critical-soft: 358 40% 18%;
-    --important: 28 85% 55%;
-    --important-soft: 28 50% 18%;
-    --safe: 152 45% 45%;
-    --safe-soft: 152 30% 16%;
-    --info: 215 55% 60%;
-    --info-soft: 215 30% 18%;
-    --destructive: 358 68% 55%;
-    --destructive-foreground: 38 30% 95%;
-    --border: 215 25% 22%;
-    --input: 215 25% 22%;
-    --ring: 184 38% 45%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    color-scheme: dark;
   }
 }
 
 @layer base {
+  html {
+    color-scheme: dark;
+  }
+
   * {
     @apply border-border;
   }
@@ -139,35 +101,30 @@
   }
 
   h1, h2, h3, h4, .font-display {
-    font-family: 'Fraunces', Georgia, serif;
-    font-feature-settings: 'ss01';
+    font-family: 'DM Serif Display', Georgia, serif;
     letter-spacing: -0.01em;
   }
 
-  .font-mono {
-    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  .font-heading {
+    font-family: 'Syne', system-ui, sans-serif;
+    letter-spacing: 0.01em;
+  }
+
+  .font-mono, code, pre, .font-data {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
   }
 }
 
 @layer components {
-  .paper-card {
+  .vellum-panel {
     background: hsl(var(--surface));
     border: 1px solid hsl(var(--border));
-    box-shadow: var(--shadow-paper);
     border-radius: var(--radius);
   }
-
-  .ink-rule {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, hsl(var(--border)), transparent);
-  }
-
-  .scan-line::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: repeating-linear-gradient(180deg, transparent 0, transparent 28px, hsl(var(--border) / 0.5) 28px, hsl(var(--border) / 0.5) 29px);
-    pointer-events: none;
-    opacity: 0.4;
+  .vellum-grid-bg {
+    background-image:
+      linear-gradient(hsl(var(--border) / 0.4) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.4) 1px, transparent 1px);
+    background-size: 32px 32px;
   }
 }

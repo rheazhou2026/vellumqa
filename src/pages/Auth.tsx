@@ -1,157 +1,151 @@
-import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
-import { Stethoscope } from "lucide-react";
-import { z } from "zod";
-
-const schema = z.object({
-  email: z.string().trim().email().max(255),
-  password: z.string().min(8).max(72),
-});
+import { ShieldCheck, GitBranch, FileSearch } from "lucide-react";
 
 export default function Auth() {
+  const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate("/app", { replace: true });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      if (s) navigate("/dashboard", { replace: true });
     });
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) navigate("/dashboard", { replace: true });
+    });
+    return () => sub.subscription.unsubscribe();
   }, [navigate]);
 
-  const onSubmit = async (e: React.FormEvent) => {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const parsed = schema.safeParse({ email, password });
-    if (!parsed.success) {
-      toast.error(parsed.error.issues[0]?.message ?? "Invalid input");
-      return;
-    }
     setLoading(true);
     try {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
-          email: parsed.data.email,
-          password: parsed.data.password,
-          options: { emailRedirectTo: `${window.location.origin}/app` },
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/dashboard`,
+            data: { display_name: displayName },
+          },
         });
         if (error) throw error;
-        toast.success("Account created. Check your email to verify your address before signing in.", { duration: 8000 });
+        toast.success("Account created. Check your email to verify before signing in.");
         setMode("signin");
-        setPassword("");
-        return;
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: parsed.data.email,
-          password: parsed.data.password,
-        });
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        toast.success("Welcome back.");
-        navigate("/app", { replace: true });
       }
-    } catch (e: any) {
-      toast.error(e?.message ?? "Authentication failed");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Authentication failed");
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const onGoogle = async () => {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: `${window.location.origin}/app`,
+  async function google() {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/dashboard` },
     });
-    if (result.error) {
-      toast.error(result.error.message ?? "Google sign-in failed");
-      return;
-    }
-    if (result.redirected) return;
-    navigate("/app", { replace: true });
-  };
+    if (error) toast.error(error.message);
+  }
 
   return (
-    <div className="grid min-h-screen bg-background lg:grid-cols-2">
-      <div className="relative hidden flex-col justify-between overflow-hidden bg-gradient-ink p-10 text-primary-foreground lg:flex">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary-foreground/10 backdrop-blur">
-            <Stethoscope className="h-4 w-4" />
-          </div>
-          <div className="leading-tight">
-            <div className="font-display text-base font-semibold">Vellum</div>
-            <div className="text-[10px] uppercase tracking-[0.18em] opacity-70">Clinical QA</div>
-          </div>
-        </Link>
-        <div className="relative">
-          <p className="font-display text-3xl leading-tight">
-            "A QA layer that reads notes the way a senior physician would,
-            looking past the prose for what the clinician didn't think about."
+    <div className="min-h-screen bg-background grid lg:grid-cols-2">
+      {/* Left brand panel */}
+      <div className="relative hidden lg:flex flex-col justify-between p-12 border-r border-border vellum-grid-bg">
+        <div>
+          <h1 className="font-display text-5xl text-foreground tracking-tight">Vellum</h1>
+          <p className="mt-3 font-heading text-sm uppercase tracking-[0.18em] text-muted-foreground">
+            Independent Clinical AI Trust Infrastructure
           </p>
-          <div className="mt-6 text-xs uppercase tracking-[0.18em] opacity-70">
-            Designed for hospital QA & safety teams
-          </div>
         </div>
-        <div className="absolute inset-0 opacity-[0.04]" style={{
-          backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)",
-          backgroundSize: "24px 24px",
-        }} />
+
+        <div className="space-y-6">
+          {[
+            { icon: FileSearch, t: "Source-Grounded Validation", d: "Every AI claim verified against transcript and EHR evidence." },
+            { icon: ShieldCheck, t: "Specialty-Aware Risk Scoring", d: "Severity calibrated by specialty acuity and patient vulnerability." },
+            { icon: GitBranch, t: "Regulator-Ready Audit Trail", d: "Immutable evidence trail for every evaluation, review, and override." },
+          ].map(({ icon: Icon, t, d }) => (
+            <div key={t} className="flex gap-4 border-l border-border-strong pl-4">
+              <Icon className="h-5 w-5 text-accent shrink-0 mt-0.5" />
+              <div>
+                <div className="font-heading text-sm font-semibold text-foreground">{t}</div>
+                <div className="text-xs text-muted-foreground mt-1 leading-relaxed">{d}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex gap-2 font-mono text-[10px] uppercase tracking-widest text-tertiary">
+          <span className="border border-border-strong px-2 py-1">HIPAA</span>
+          <span className="border border-border-strong px-2 py-1">SOC 2</span>
+          <span className="border border-border-strong px-2 py-1">21 CFR Part 11</span>
+        </div>
       </div>
 
-      <div className="flex items-center justify-center px-6 py-12 lg:px-12">
+      {/* Right form panel */}
+      <div className="flex items-center justify-center p-6 sm:p-12">
         <div className="w-full max-w-sm">
-          <h1 className="font-display text-3xl font-semibold">
-            {mode === "signup" ? "Create your account" : "Sign in"}
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {mode === "signup"
-              ? "Start auditing AI-generated clinical notes."
-              : "Continue your clinical QA work."}
-          </p>
-
-          {mode === "signup" && (
-            <div className="mt-4 rounded-md border border-border bg-surface-muted/60 p-3 text-xs text-muted-foreground">
-              After you create your account, we'll send a verification link to your email. Confirm it before signing in.
-            </div>
-          )}
-
-          <form onSubmit={onSubmit} className="mt-8 space-y-4">
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1.5" />
-            </div>
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" autoComplete={mode === "signup" ? "new-password" : "current-password"} required value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1.5" />
-            </div>
-            <Button type="submit" disabled={loading} className="w-full bg-gradient-ink text-primary-foreground hover:opacity-90">
-              {loading ? "..." : mode === "signup" ? "Create account" : "Sign in"}
-            </Button>
-          </form>
-
-          <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-widest text-muted-foreground">
-            <div className="h-px flex-1 bg-border" />
-            <span>or</span>
-            <div className="h-px flex-1 bg-border" />
+          <div className="lg:hidden mb-8">
+            <h1 className="font-display text-4xl">Vellum</h1>
           </div>
+          <div className="font-heading text-xs uppercase tracking-[0.2em] text-muted-foreground mb-2">
+            {mode === "signin" ? "Reviewer Sign In" : "Request Reviewer Access"}
+          </div>
+          <h2 className="font-display text-3xl mb-8">
+            {mode === "signin" ? "Continue to console" : "Create account"}
+          </h2>
 
-          <Button variant="outline" className="w-full" onClick={onGoogle}>
-            Continue with Google
-          </Button>
+          <form onSubmit={submit} className="space-y-4">
+            {mode === "signup" && (
+              <div>
+                <Label htmlFor="name" className="font-heading text-xs uppercase tracking-wider text-muted-foreground">Full name</Label>
+                <Input id="name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required className="mt-1.5 bg-surface border-border" />
+              </div>
+            )}
+            <div>
+              <Label htmlFor="email" className="font-heading text-xs uppercase tracking-wider text-muted-foreground">Email</Label>
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" className="mt-1.5 bg-surface border-border font-mono text-sm" />
+            </div>
+            <div>
+              <Label htmlFor="pw" className="font-heading text-xs uppercase tracking-wider text-muted-foreground">Password</Label>
+              <Input id="pw" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} autoComplete={mode === "signin" ? "current-password" : "new-password"} className="mt-1.5 bg-surface border-border" />
+            </div>
 
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            {mode === "signup" ? "Already have an account?" : "New to Vellum?"}{" "}
-            <button
-              onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
-              className="font-medium text-foreground underline-offset-4 hover:underline"
-            >
-              {mode === "signup" ? "Sign in" : "Create one"}
+            <Button type="submit" disabled={loading} className="w-full bg-accent hover:bg-accent-hover text-accent-foreground font-heading uppercase tracking-wider text-xs h-10 rounded-sm">
+              {loading ? "…" : mode === "signin" ? "Continue" : "Request access"}
+            </Button>
+
+            <div className="relative py-2">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
+              <div className="relative flex justify-center"><span className="bg-background px-3 font-mono text-[10px] uppercase tracking-widest text-tertiary">or</span></div>
+            </div>
+
+            <Button type="button" variant="outline" onClick={google} className="w-full border-border bg-surface hover:bg-surface-muted h-10 rounded-sm font-heading uppercase tracking-wider text-xs">
+              Continue with Google
+            </Button>
+
+            {mode === "signup" && (
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                After creating your account you must verify your email before signing in. Check your inbox (and spam folder).
+              </p>
+            )}
+
+            <button type="button" onClick={() => setMode(mode === "signin" ? "signup" : "signin")} className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition pt-2">
+              {mode === "signin" ? "Need access? Request an account" : "Already have an account? Sign in"}
             </button>
-          </p>
+          </form>
         </div>
       </div>
     </div>

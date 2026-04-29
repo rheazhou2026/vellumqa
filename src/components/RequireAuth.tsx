@@ -1,40 +1,32 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import type { Session } from "@supabase/supabase-js";
 
-export function RequireAuth({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<"loading" | "authed" | "anon">("loading");
+export default function RequireAuth({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
   const location = useLocation();
 
   useEffect(() => {
-    let mounted = true;
-    const sub = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!mounted) return;
-      setState(session ? "authed" : "anon");
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      setSession(s);
+      setLoading(false);
     });
     supabase.auth.getSession().then(({ data }) => {
-      if (!mounted) return;
-      setState(data.session ? "authed" : "anon");
+      setSession(data.session);
+      setLoading(false);
     });
-    return () => {
-      mounted = false;
-      sub.data.subscription.unsubscribe();
-    };
+    return () => sub.subscription.unsubscribe();
   }, []);
 
-  if (state === "loading") {
+  if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="font-mono text-xs uppercase tracking-widest text-muted-foreground animate-pulse-soft">
-          authenticating
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="font-mono text-xs text-muted-foreground tracking-widest">LOADING…</div>
       </div>
     );
   }
-
-  if (state === "anon") {
-    return <Navigate to="/auth" replace state={{ from: location }} />;
-  }
-
+  if (!session) return <Navigate to="/auth" state={{ from: location }} replace />;
   return <>{children}</>;
 }

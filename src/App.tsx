@@ -1,20 +1,22 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Landing from "./pages/Landing.tsx";
-import Auth from "./pages/Auth.tsx";
-import { AppShell } from "./components/AppShell";
-import { RequireAuth } from "./components/RequireAuth";
+import Auth from "./pages/Auth";
+import RequireAuth from "./components/RequireAuth";
+import AppShell from "./components/AppShell";
 import Dashboard from "./pages/app/Dashboard";
+import Encounters from "./pages/app/Encounters";
+import EncounterDetail from "./pages/app/EncounterDetail";
+import EvaluationReport from "./pages/app/EvaluationReport";
 import Review from "./pages/app/Review";
-import Bulk from "./pages/app/Bulk";
-import Guidelines from "./pages/app/Guidelines";
+import ReviewTask from "./pages/app/ReviewTask";
 import Analytics from "./pages/app/Analytics";
-import Sources from "./pages/app/Sources";
-import Diagnostics from "./pages/app/Diagnostics";
-import NotFound from "./pages/NotFound.tsx";
+import Compliance from "./pages/app/Compliance";
+import Governance from "./pages/app/Governance";
+import Settings from "./pages/app/Settings";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -25,27 +27,29 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/auth" element={<Auth />} />
           <Route
-            path="/app"
             element={
               <RequireAuth>
                 <AppShell />
               </RequireAuth>
             }
           >
-            <Route index element={<Dashboard />} />
-            <Route path="review" element={<Review />} />
-            <Route path="review/:analysisId" element={<Review />} />
-            <Route path="bulk" element={<Bulk />} />
-            <Route path="bulk/:batchId" element={<Bulk />} />
-            <Route path="guidelines" element={<Guidelines />} />
-            <Route path="analytics" element={<Analytics />} />
-            <Route path="sources" element={<Sources />} />
-            <Route path="diagnostics" element={<Diagnostics />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/encounters" element={<Encounters />} />
+            <Route path="/encounters/:id" element={<EncounterDetail />} />
+            <Route path="/encounters/:id/eval" element={<EvaluationReport />} />
+            <Route path="/review" element={<Review />} />
+            <Route path="/review/:id" element={<ReviewTask />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/analytics/:tab" element={<Analytics />} />
+            <Route path="/compliance" element={<Compliance />} />
+            <Route path="/compliance/:tab" element={<Compliance />} />
+            <Route path="/governance" element={<Governance />} />
+            <Route path="/governance/:tab" element={<Governance />} />
+            <Route path="/settings" element={<Settings />} />
           </Route>
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

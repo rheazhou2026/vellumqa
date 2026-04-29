@@ -1,95 +1,134 @@
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import {
-  Stethoscope,
-  LayoutDashboard,
-  FileSearch,
-  Layers,
-  BookMarked,
-  Activity,
-  Cpu,
-  LogOut,
-  Wrench,
+  LayoutDashboard, FileText, ClipboardCheck, BarChart3,
+  ShieldCheck, Settings as SettingsIcon, Bell, LogOut,
+  ChevronLeft, ChevronRight, Scale,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
 
-const nav = [
-  { to: "/app", label: "Overview", icon: LayoutDashboard, end: true },
-  { to: "/app/review", label: "Review Note", icon: FileSearch },
-  { to: "/app/bulk", label: "Bulk Processing", icon: Layers },
-  { to: "/app/guidelines", label: "Guidelines Library", icon: BookMarked },
-  { to: "/app/analytics", label: "AI Performance", icon: Activity },
-  { to: "/app/sources", label: "AI Sources", icon: Cpu },
-  { to: "/app/diagnostics", label: "Diagnostics", icon: Wrench },
+const NAV = [
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/encounters", label: "Encounters", icon: FileText },
+  { to: "/review", label: "QA Review", icon: ClipboardCheck, badgeKey: "pending_reviews" },
+  { to: "/analytics", label: "Analytics", icon: BarChart3 },
+  { to: "/compliance", label: "Compliance", icon: Scale },
+  { to: "/governance", label: "Governance", icon: ShieldCheck },
+  { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
-export function AppShell() {
+export default function AppShell() {
+  const [collapsed, setCollapsed] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [email, setEmail] = useState<string>("");
   const navigate = useNavigate();
-  const [email, setEmail] = useState<string | null>(null);
+  const loc = useLocation();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ""));
   }, []);
 
-  const signOut = async () => {
+  // Real-time pending review count
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return;
+      const { count } = await supabase
+        .from("reviewer_assignments")
+        .select("*", { count: "exact", head: true })
+        .eq("reviewer_id", u.user.id)
+        .eq("status", "pending");
+      if (mounted) setPendingCount(count ?? 0);
+    }
+    load();
+    const ch = supabase
+      .channel("assignments-badge")
+      .on("postgres_changes", { event: "*", schema: "public", table: "reviewer_assignments" }, load)
+      .subscribe();
+    return () => {
+      mounted = false;
+      supabase.removeChannel(ch);
+    };
+  }, []);
+
+  async function signOut() {
     await supabase.auth.signOut();
-    navigate("/auth", { replace: true });
-  };
+    navigate("/auth");
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto flex max-w-[1400px]">
-        <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border bg-surface-muted/60 px-4 py-6 lg:flex">
-          <Link to="/app" className="mb-8 flex items-center gap-2 px-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-gradient-ink text-primary-foreground">
-              <Stethoscope className="h-4 w-4" />
-            </div>
-            <div className="leading-tight">
-              <div className="font-display text-base font-semibold">Vellum</div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                Clinical QA
-              </div>
-            </div>
+    <div className="min-h-screen bg-background flex">
+      {/* Sidebar */}
+      <aside
+        className={`${collapsed ? "w-16" : "w-60"} shrink-0 border-r border-border bg-sidebar flex flex-col transition-[width] duration-200`}
+      >
+        <div className={`h-14 flex items-center ${collapsed ? "justify-center" : "px-4"} border-b border-border`}>
+          <Link to="/dashboard" className="font-display text-2xl tracking-tight text-foreground">
+            {collapsed ? "V" : "Vellum"}
           </Link>
+        </div>
 
-          <nav className="flex-1 space-y-1">
-            {nav.map((n) => (
+        <nav className="flex-1 py-3 space-y-0.5">
+          {NAV.map((item) => {
+            const Icon = item.icon;
+            const active =
+              loc.pathname === item.to || loc.pathname.startsWith(item.to + "/");
+            return (
               <NavLink
-                key={n.to}
-                to={n.to}
-                end={n.end}
-                className={({ isActive }) =>
-                  cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
-                    isActive
-                      ? "bg-surface text-foreground shadow-paper"
-                      : "text-muted-foreground hover:bg-surface hover:text-foreground",
-                  )
-                }
+                key={item.to}
+                to={item.to}
+                className={`flex items-center gap-3 mx-2 px-3 h-9 rounded-sm font-heading text-xs uppercase tracking-wider transition-colors ${
+                  active
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground border-l-2 border-accent -ml-[2px] pl-[14px]"
+                    : "text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent/50"
+                }`}
               >
-                <n.icon className="h-4 w-4" />
-                {n.label}
+                <Icon className="h-4 w-4 shrink-0" />
+                {!collapsed && (
+                  <>
+                    <span className="flex-1 truncate">{item.label}</span>
+                    {item.badgeKey === "pending_reviews" && pendingCount > 0 && (
+                      <span className="bg-critical text-critical-foreground font-mono text-[10px] px-1.5 rounded-sm">
+                        {pendingCount}
+                      </span>
+                    )}
+                  </>
+                )}
               </NavLink>
-            ))}
-          </nav>
+            );
+          })}
+        </nav>
 
-          <div className="mt-4 rounded-md border border-border bg-surface p-3">
-            <div className="truncate text-xs text-muted-foreground">{email}</div>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="mt-2 h-8 w-full justify-start gap-2 px-2 text-xs"
-              onClick={signOut}
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              Sign out
-            </Button>
+        <button
+          onClick={() => setCollapsed((c) => !c)}
+          className="h-10 border-t border-border flex items-center justify-center text-tertiary hover:text-foreground hover:bg-sidebar-accent/50 transition"
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </button>
+      </aside>
+
+      {/* Main */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <header className="h-14 border-b border-border bg-background/80 backdrop-blur sticky top-0 z-10 flex items-center justify-between px-6">
+          <div className="font-mono text-[11px] uppercase tracking-widest text-tertiary">
+            VELLUM // CLINICAL AI AUDIT
           </div>
-        </aside>
-
-        <main className="flex-1 px-6 py-8 lg:px-10">
+          <div className="flex items-center gap-4">
+            <button className="text-muted-foreground hover:text-foreground transition" aria-label="Notifications">
+              <Bell className="h-4 w-4" />
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="font-mono text-xs text-muted-foreground hidden sm:block">{email}</div>
+              <Button variant="ghost" size="sm" onClick={signOut} className="h-8 text-muted-foreground hover:text-foreground">
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </header>
+        <main className="flex-1 overflow-auto">
           <Outlet />
         </main>
       </div>
