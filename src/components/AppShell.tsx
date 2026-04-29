@@ -3,10 +3,11 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-do
 import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard, FileText, ClipboardCheck, BarChart3,
-  ShieldCheck, Settings as SettingsIcon, Bell, LogOut,
+  ShieldCheck, Settings as SettingsIcon, LogOut,
   ChevronLeft, ChevronRight, Scale,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import NotificationBell from "@/components/vellum/NotificationBell";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -117,9 +118,7 @@ export default function AppShell() {
             VELLUM // CLINICAL AI AUDIT
           </div>
           <div className="flex items-center gap-4">
-            <button className="text-muted-foreground hover:text-foreground transition" aria-label="Notifications">
-              <Bell className="h-4 w-4" />
-            </button>
+            <NotificationBell />
             <div className="flex items-center gap-3">
               <div className="font-mono text-xs text-muted-foreground hidden sm:block">{email}</div>
               <Button variant="ghost" size="sm" onClick={signOut} className="h-8 text-muted-foreground hover:text-foreground">
