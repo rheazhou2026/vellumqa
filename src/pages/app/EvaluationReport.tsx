@@ -263,17 +263,11 @@ export default function EvaluationReport() {
                 { label: "Evaluator confidence", val: run.evaluator_confidence, dir: "up", pct: true,
                   tip: "How sure the evaluator is about its own scoring (0–100%). 100% means the evaluator had unambiguous evidence for every criterion — rare in real audits." },
               ] as any[]).map(({ label, val, dir, pct, tip }: any) => {
-                let display: string | number = "—";
-                if (val != null) {
-                  if (pct) {
-                    const raw = Number(val);
-                    const pctVal = raw <= 1 ? raw * 100 : raw;
-                    // Only render "100%" when the model truly emitted 1.0 (or 100); otherwise round but never silently collapse 0.97 → 100.
-                    display = pctVal >= 99.5 && raw < 1 ? "99%" : `${Math.round(pctVal)}%`;
-                  } else {
-                    display = Math.round(Number(val) * 10) / 10;
-                  }
-                }
+                const display = pct
+                  ? formatConfidence(val)
+                  : val == null
+                    ? "—"
+                    : Math.round(Number(val) * 10) / 10;
                 return (
                   <div key={label} className="border border-border rounded-sm p-3 bg-surface" title={tip}>
                     <div className="text-[10px] uppercase tracking-wider text-tertiary flex items-center justify-between">
@@ -282,7 +276,9 @@ export default function EvaluationReport() {
                         {dir === "down" ? "↑ worse" : "↑ better"}
                       </span>
                     </div>
-                    <div className="font-display text-2xl mt-1">{display}</div>
+                    <div className="font-display text-2xl mt-1">
+                      {pct ? <ConfidenceLegend value={val} /> : display}
+                    </div>
                   </div>
                 );
               })}
