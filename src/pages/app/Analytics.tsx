@@ -5,6 +5,7 @@ import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
   BarChart, Bar,
 } from "recharts";
+import DomainRadar from "@/components/vellum/DomainRadar";
 
 const COLORS = ["hsl(var(--accent))", "hsl(var(--pass))", "hsl(var(--moderate))", "hsl(var(--high))", "hsl(var(--critical))"];
 
@@ -153,6 +154,9 @@ export default function Analytics() {
             {insights.map((t, i) => <li key={i} className="flex gap-2"><span className="text-accent">›</span>{t}</li>)}
           </ul>
         </section>
+
+        {/* Domain Score Radar */}
+        <DomainRadar />
 
         {/* Trust over time */}
         <section className="vellum-panel p-5">
