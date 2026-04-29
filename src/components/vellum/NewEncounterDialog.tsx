@@ -173,8 +173,11 @@ export default function NewEncounterDialog({ onCreated }: { onCreated?: () => vo
             <Input className="mt-1" value={vendor} onChange={(e) => setVendor(e.target.value)} />
           </div>
           <div className="col-span-2">
-            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Source evidence (transcript / EHR / labs)</Label>
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Source evidence</Label>
             <Textarea className="mt-1 font-mono text-xs min-h-[140px]" value={source} onChange={(e) => setSource(e.target.value)} />
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Use <code>[transcript]</code>, <code>[ehr]</code>, <code>[labs]</code> tags to separate sections. Untagged text is treated as transcript.
+            </p>
           </div>
           <div className="col-span-2">
             <Label className="text-xs uppercase tracking-wider text-muted-foreground">AI-generated note</Label>
