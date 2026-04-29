@@ -50,13 +50,15 @@ export default function NewEncounterDialog({ onCreated }: { onCreated?: () => vo
         .single();
       if (encErr) throw encErr;
 
-      // source(s)
+      // source(s) — split by [transcript] / [ehr] / [labs] tags
       if (source.trim()) {
-        await supabase.from("encounter_sources").insert({
+        const sections = parseSourceSections(source);
+        const rows = sections.map((s) => ({
           encounter_id: enc.id,
-          source_type: "transcript",
-          content: { text: source },
-        });
+          source_type: s.type,
+          content: { text: s.text },
+        }));
+        if (rows.length) await supabase.from("encounter_sources").insert(rows);
       }
 
       // note artifact
