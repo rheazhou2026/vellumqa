@@ -597,12 +597,19 @@ Deno.serve(async (req) => {
     const STATUS_RANK: Record<string, number> = {
       contradicted: 4, unsupported: 3, uncertain: 2, supported: 1,
     };
+    const normalizeClaimText = (raw: string): string => {
+      let t = String(raw ?? "").toLowerCase().trim().replace(/\s+/g, " ");
+      t = t.replace(/[\s.,;:!?"'`]+$/g, "");
+      t = t.replace(/^(assessment of|diagnosis of|impression of|plan to|plan:|note:|patient (is|was) |the patient (is|was) )/i, "").trim();
+      return t;
+    };
     const dedupMap = new Map<string, any>();
     for (const c of (claimsOut ?? [])) {
-      const text = String(c.claim_text ?? "").trim().toLowerCase().replace(/\s+/g, " ");
-      const type = String(c.claim_type ?? "").trim().toLowerCase();
+      const text = normalizeClaimText(c.claim_text);
       if (!text) continue;
-      const key = `${type}::${text}`;
+      // Key on normalized text only — collapses across mis-typed duplicates
+      // (e.g. "Vitals stable" emitted once as `vital`, once as `exam`).
+      const key = text;
       const existing = dedupMap.get(key);
       if (!existing) {
         dedupMap.set(key, { ...c });

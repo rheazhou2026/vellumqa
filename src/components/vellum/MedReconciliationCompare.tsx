@@ -18,6 +18,15 @@ const EXPLICIT_DRUG_LIST = [
   "sertraline","citalopram","fluoxetine","trazodone","gabapentin","levothyroxine","sitagliptin",
   "amoxicillin","azithromycin","ceftriaxone","vancomycin","nitroglycerin","morphine","fentanyl",
   "ondansetron","zofran","lorazepam","diazepam","alprazolam","clonazepam","tramadol","oxycodone",
+  // Oncology supportive care + chemo agents — critical to surface in onc encounters.
+  "filgrastim","pegfilgrastim","neupogen","neulasta","epoetin","darbepoetin","leucovorin",
+  "fluorouracil","oxaliplatin","folfox","folfiri","capecitabine","irinotecan","cisplatin",
+  "carboplatin","paclitaxel","docetaxel","doxorubicin","cyclophosphamide","gemcitabine",
+  "rituximab","bevacizumab","cetuximab","trastuzumab","pembrolizumab","nivolumab",
+  "tamoxifen","letrozole","anastrozole","methotrexate","mercaptopurine","allopurinol",
+  // Common ED / inpatient meds the suffix regex misses.
+  "cefepime","piperacillin","tazobactam","meropenem","levofloxacin","ciprofloxacin",
+  "metronidazole","dexamethasone","hydrocortisone","epinephrine","norepinephrine",
 ];
 
 function extractMeds(text: string): string[] {
