@@ -295,27 +295,7 @@ export default function EvaluationReport() {
           />
         )}
         {manifest && (
-          <section className="vellum-panel p-4">
-            <div className="font-mono text-[10px] uppercase tracking-widest text-tertiary mb-2">
-              Rubric load manifest · scoped to chief complaint
-            </div>
-            <div className="grid grid-cols-2 gap-3 text-[11px]">
-              <div>
-                <div className="text-pass font-mono text-[10px] uppercase tracking-wider mb-1">Loaded</div>
-                <ul className="space-y-0.5 text-foreground/90">
-                  {(manifest.loaded_modules ?? []).map((m: string) => <li key={m}>· {m}</li>)}
-                  {!(manifest.loaded_modules ?? []).length && <li className="text-muted-foreground">none</li>}
-                </ul>
-              </div>
-              <div>
-                <div className="text-tertiary font-mono text-[10px] uppercase tracking-wider mb-1">Excluded (off-topic for this CC)</div>
-                <ul className="space-y-0.5 text-muted-foreground">
-                  {(manifest.excluded_modules ?? []).map((m: string) => <li key={m}>· {m}</li>)}
-                  {!(manifest.excluded_modules ?? []).length && <li>none</li>}
-                </ul>
-              </div>
-            </div>
-          </section>
+          <RubricManifestPanel manifest={manifest} chiefComplaint={encounter?.chief_complaint} />
         )}
         {run && <GuidelineMatchPanel matches={run.guideline_matches} runId={run.id} />}
         {run && <RedFlagPanel findings={run.red_flag_findings} runId={run.id} />}
