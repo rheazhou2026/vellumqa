@@ -15,6 +15,7 @@ export default {
     extend: {
       colors: {
         border: "hsl(var(--border))",
+        "border-strong": "hsl(var(--border-strong))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
@@ -39,28 +40,35 @@ export default {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
         },
+        tertiary: "hsl(var(--tertiary))",
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
+          hover: "hsl(var(--accent-hover))",
         },
         critical: {
           DEFAULT: "hsl(var(--critical))",
           foreground: "hsl(var(--critical-foreground))",
-          soft: "hsl(var(--critical-soft))",
+          bg: "hsl(var(--critical-bg))",
         },
-        important: {
-          DEFAULT: "hsl(var(--important))",
-          foreground: "hsl(var(--important-foreground))",
-          soft: "hsl(var(--important-soft))",
+        high: {
+          DEFAULT: "hsl(var(--high))",
+          foreground: "hsl(var(--high-foreground))",
+          bg: "hsl(var(--high-bg))",
         },
-        safe: {
-          DEFAULT: "hsl(var(--safe))",
-          foreground: "hsl(var(--safe-foreground))",
-          soft: "hsl(var(--safe-soft))",
+        moderate: {
+          DEFAULT: "hsl(var(--moderate))",
+          foreground: "hsl(var(--moderate-foreground))",
+          bg: "hsl(var(--moderate-bg))",
+        },
+        pass: {
+          DEFAULT: "hsl(var(--pass))",
+          foreground: "hsl(var(--pass-foreground))",
+          bg: "hsl(var(--pass-bg))",
         },
         info: {
           DEFAULT: "hsl(var(--info))",
-          soft: "hsl(var(--info-soft))",
+          bg: "hsl(var(--info-bg))",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -82,9 +90,11 @@ export default {
         },
       },
       fontFamily: {
-        display: ['Fraunces', 'Georgia', 'serif'],
+        display: ['"DM Serif Display"', 'Georgia', 'serif'],
+        heading: ['Syne', 'system-ui', 'sans-serif'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
+        data: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
       },
       backgroundImage: {
         'gradient-paper': 'var(--gradient-paper)',
