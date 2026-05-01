@@ -45,7 +45,7 @@ export const SceneOutro: React.FC = () => {
             transform: `translateY(${subY}px)`,
           }}
         >
-          Independent · Evidence-grounded · Regulator-ready
+          The independent clinical AI trust layer.
         </div>
 
         <div style={{ display: "flex", gap: 24, justifyContent: "center", marginTop: 50 }}>
