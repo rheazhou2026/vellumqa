@@ -1,4 +1,4 @@
-import { AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate } from "remotion";
+import { AbsoluteFill, useCurrentFrame, interpolate } from "remotion";
 import React from "react";
 
 /**
@@ -12,19 +12,18 @@ import React from "react";
  */
 export const SceneWrap: React.FC<{
   children: React.ReactNode;
+  duration: number;
   leadIn?: number;
   leadOut?: number;
-}> = ({ children, leadIn = 8, leadOut = 14 }) => {
+}> = ({ children, duration, leadIn = 8, leadOut = 14 }) => {
   const frame = useCurrentFrame();
-  const { durationInFrames } = useVideoConfig();
-
   const fadeIn = interpolate(frame, [leadIn, leadIn + 10], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
   const fadeOut = interpolate(
     frame,
-    [durationInFrames - leadOut, durationInFrames - 2],
+    [duration - leadOut, duration - 2],
     [1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
