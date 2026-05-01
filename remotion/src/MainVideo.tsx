@@ -1,7 +1,4 @@
-import { AbsoluteFill, useCurrentFrame, interpolate } from "remotion";
-import { TransitionSeries, springTiming } from "@remotion/transitions";
-import { fade } from "@remotion/transitions/fade";
-import { wipe } from "@remotion/transitions/wipe";
+import { AbsoluteFill, Audio, Series, staticFile, useCurrentFrame } from "remotion";
 import { loadFont as loadDisplay } from "@remotion/google-fonts/PlayfairDisplay";
 import { loadFont as loadMono } from "@remotion/google-fonts/JetBrainsMono";
 import { loadFont as loadSans } from "@remotion/google-fonts/Inter";
@@ -11,7 +8,9 @@ import { SceneIngest } from "./scenes/SceneIngest";
 import { SceneAudit } from "./scenes/SceneAudit";
 import { SceneTrust } from "./scenes/SceneTrust";
 import { SceneReview } from "./scenes/SceneReview";
+import { SceneIntegrate } from "./scenes/SceneIntegrate";
 import { SceneOutro } from "./scenes/SceneOutro";
+import { SceneWrap } from "./components/SceneWrap";
 
 loadDisplay("normal", { weights: ["400", "700"], subsets: ["latin"] });
 loadMono("normal", { weights: ["400", "500"], subsets: ["latin"] });
@@ -43,50 +42,30 @@ const Vignette: React.FC = () => (
   />
 );
 
+const SCENES: { Component: React.FC; duration: number; leadIn?: number; leadOut?: number }[] = [
+  { Component: SceneIntro, duration: 130 },
+  { Component: SceneIngest, duration: 175 },
+  { Component: SceneAudit, duration: 180 },
+  { Component: SceneTrust, duration: 200 },
+  { Component: SceneReview, duration: 210 },
+  { Component: SceneIntegrate, duration: 160 },
+  { Component: SceneOutro, duration: 145 },
+];
+
 export const MainVideo: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: "#0F1115" }}>
+      <Audio src={staticFile("music.mp3")} volume={0.55} />
       <Grid />
-      <TransitionSeries>
-        <TransitionSeries.Sequence durationInFrames={120}>
-          <SceneIntro />
-        </TransitionSeries.Sequence>
-        <TransitionSeries.Transition
-          presentation={fade()}
-          timing={springTiming({ config: { damping: 200 }, durationInFrames: 20 })}
-        />
-        <TransitionSeries.Sequence durationInFrames={140}>
-          <SceneIngest />
-        </TransitionSeries.Sequence>
-        <TransitionSeries.Transition
-          presentation={wipe({ direction: "from-right" })}
-          timing={springTiming({ config: { damping: 200 }, durationInFrames: 24 })}
-        />
-        <TransitionSeries.Sequence durationInFrames={140}>
-          <SceneAudit />
-        </TransitionSeries.Sequence>
-        <TransitionSeries.Transition
-          presentation={fade()}
-          timing={springTiming({ config: { damping: 200 }, durationInFrames: 20 })}
-        />
-        <TransitionSeries.Sequence durationInFrames={150}>
-          <SceneTrust />
-        </TransitionSeries.Sequence>
-        <TransitionSeries.Transition
-          presentation={wipe({ direction: "from-right" })}
-          timing={springTiming({ config: { damping: 200 }, durationInFrames: 24 })}
-        />
-        <TransitionSeries.Sequence durationInFrames={140}>
-          <SceneReview />
-        </TransitionSeries.Sequence>
-        <TransitionSeries.Transition
-          presentation={fade()}
-          timing={springTiming({ config: { damping: 200 }, durationInFrames: 20 })}
-        />
-        <TransitionSeries.Sequence durationInFrames={100}>
-          <SceneOutro />
-        </TransitionSeries.Sequence>
-      </TransitionSeries>
+      <Series>
+        {SCENES.map(({ Component, duration, leadIn, leadOut }, i) => (
+          <Series.Sequence key={i} durationInFrames={duration}>
+            <SceneWrap duration={duration} leadIn={leadIn ?? 10} leadOut={leadOut ?? 16}>
+              <Component />
+            </SceneWrap>
+          </Series.Sequence>
+        ))}
+      </Series>
       <Vignette />
     </AbsoluteFill>
   );
