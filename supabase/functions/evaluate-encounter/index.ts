@@ -11,7 +11,9 @@ const corsHeaders = {
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const MODEL = "google/gemini-2.5-pro";
+// gemini-2.5-flash is ~3x faster than pro with comparable quality for
+// structured tool-call extraction/scoring used in this pipeline.
+const MODEL = "google/gemini-2.5-flash";
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 type Json = Record<string, unknown>;

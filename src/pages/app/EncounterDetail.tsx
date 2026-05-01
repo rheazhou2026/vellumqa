@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import PageHeader from "@/components/vellum/PageHeader";
 import TrustScorePill from "@/components/vellum/TrustScorePill";
@@ -22,6 +22,7 @@ import SafePlanSuggestion from "@/components/vellum/SafePlanSuggestion";
 
 export default function EncounterDetail() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [encounter, setEncounter] = useState<any>(null);
   const [sources, setSources] = useState<any[]>([]);
   const [artifact, setArtifact] = useState<any>(null);
@@ -32,6 +33,10 @@ export default function EncounterDetail() {
   const [activeTab, setActiveTab] = useState("transcript");
   const [running, setRunning] = useState(false);
   const [manifest, setManifest] = useState<any>(null);
+
+  // Truthy when caller (e.g. NewEncounterDialog) said an evaluation is in
+  // flight. We clear it as soon as a run row appears.
+  const evaluatingFromQuery = searchParams.get("evaluating") === "1";
 
   async function load() {
     if (!id) return;
@@ -82,6 +87,28 @@ export default function EncounterDetail() {
     return () => { supabase.removeChannel(ch); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // Poll as a backup while an evaluation is in flight — realtime can be
+  // delayed or dropped on flaky connections, and we never want the user to
+  // have to manually refresh to see their audit results.
+  useEffect(() => {
+    if (!id) return;
+    if (!evaluatingFromQuery && !running) return;
+    if (run?.trust_score != null) return;
+    const t = setInterval(load, 3000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, evaluatingFromQuery, running, run?.trust_score]);
+
+  // Once a run lands, clear the ?evaluating=1 flag from the URL.
+  useEffect(() => {
+    if (run?.trust_score != null && evaluatingFromQuery) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("evaluating");
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [run?.trust_score]);
 
   async function rerun() {
     if (!id) return;
@@ -214,12 +241,25 @@ export default function EncounterDetail() {
 
           {!run ? (
             <div className="flex-1 flex items-center justify-center text-center p-8">
-              <div>
-                <div className="font-mono text-[10px] uppercase tracking-widest text-tertiary mb-3">No evaluation yet</div>
-                <Button size="sm" onClick={rerun} disabled={running} className="bg-accent text-accent-foreground hover:bg-accent-hover">
-                  {running ? "Evaluating…" : "Run audit"}
-                </Button>
-              </div>
+              {evaluatingFromQuery || running ? (
+                <div>
+                  <Loader2 className="h-6 w-6 mx-auto text-accent animate-spin mb-3" />
+                  <div className="font-mono text-[10px] uppercase tracking-widest text-tertiary mb-1">
+                    Vellum evaluation in progress
+                  </div>
+                  <div className="text-[11px] text-muted-foreground max-w-[240px] mx-auto">
+                    Extracting claims, scoring against rubric, and computing sub-scores.
+                    This usually takes 15–30 seconds.
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div className="font-mono text-[10px] uppercase tracking-widest text-tertiary mb-3">No evaluation yet</div>
+                  <Button size="sm" onClick={rerun} disabled={running} className="bg-accent text-accent-foreground hover:bg-accent-hover">
+                    Run audit
+                  </Button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex-1 overflow-auto">
