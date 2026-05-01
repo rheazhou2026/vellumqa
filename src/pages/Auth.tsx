@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
@@ -174,6 +174,12 @@ export default function Auth() {
             <button type="button" onClick={() => setMode(mode === "signin" ? "signup" : "signin")} className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition pt-2">
               {mode === "signin" ? "Create an account" : "Already have an account? Sign in"}
             </button>
+
+            <div className="pt-4 text-center">
+              <Link to="/faq" className="text-[11px] font-heading uppercase tracking-[0.18em] text-tertiary hover:text-accent transition">
+                Watch demo & FAQ →
+              </Link>
+            </div>
           </form>
         </div>
       </div>
