@@ -5,12 +5,12 @@ import { loadFont as loadSans } from "@remotion/google-fonts/Inter";
 
 import { SceneIntro } from "./scenes/SceneIntro";
 import { SceneIngest } from "./scenes/SceneIngest";
-import { SceneAudit } from "./scenes/SceneAudit";
 import { SceneTrust } from "./scenes/SceneTrust";
 import { SceneReview } from "./scenes/SceneReview";
 import { SceneProblem } from "./scenes/SceneProblem";
-import { SceneWhyNow } from "./scenes/SceneWhyNow";
 import { SceneOverrides } from "./scenes/SceneOverrides";
+import { SceneClaimLedger } from "./scenes/SceneClaimLedger";
+import { SceneRubric } from "./scenes/SceneRubric";
 import { SceneOutro } from "./scenes/SceneOutro";
 import { SceneWrap } from "./components/SceneWrap";
 
@@ -45,15 +45,15 @@ const Vignette: React.FC = () => (
 );
 
 const SCENES: { Component: React.FC; duration: number; leadIn?: number; leadOut?: number }[] = [
-  { Component: SceneIntro, duration: 110 },
-  { Component: SceneProblem, duration: 180 },
-  { Component: SceneWhyNow, duration: 190 },
-  { Component: SceneIngest, duration: 165 },
-  { Component: SceneAudit, duration: 170 },
-  { Component: SceneTrust, duration: 200 },
-  { Component: SceneOverrides, duration: 210 },
-  { Component: SceneReview, duration: 200 },
-  { Component: SceneOutro, duration: 130 },
+  { Component: SceneIntro, duration: 130 },
+  { Component: SceneProblem, duration: 165 },
+  { Component: SceneIngest, duration: 150 },
+  { Component: SceneClaimLedger, duration: 195 },
+  { Component: SceneRubric, duration: 200 },
+  { Component: SceneTrust, duration: 175 },
+  { Component: SceneOverrides, duration: 175 },
+  { Component: SceneReview, duration: 175 },
+  { Component: SceneOutro, duration: 135 },
 ];
 
 export const MainVideo: React.FC = () => {
