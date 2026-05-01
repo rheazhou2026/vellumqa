@@ -124,14 +124,16 @@ export default function NewEncounterDialog({ onCreated }: { onCreated?: () => vo
       setOpen(false);
       onCreated?.();
 
-      // Fire-and-route: kick off evaluation, then go to detail
+      // Fire-and-route: kick off evaluation, then go to detail.
+      // Pass `?evaluating=1` so the detail page shows a clear loading state
+      // until the realtime subscription brings in the completed run.
       supabase.functions
         .invoke("evaluate-encounter", { body: { encounter_id: enc.id } })
         .then(({ error }) => {
           if (error) toast.error(`Evaluation failed: ${error.message}`);
           else toast.success("Evaluation complete");
         });
-      navigate(`/encounters/${enc.id}`);
+      navigate(`/encounters/${enc.id}?evaluating=1`);
     } catch (e: any) {
       toast.error(e.message ?? "Failed to create encounter");
     } finally {
