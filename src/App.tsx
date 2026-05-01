@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Auth from "./pages/Auth";
+import FAQ from "./pages/FAQ";
 import RequireAuth from "./components/RequireAuth";
 import AppShell from "./components/AppShell";
 import Dashboard from "./pages/app/Dashboard";
@@ -31,6 +32,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/faq" element={<FAQ />} />
           <Route
             element={
               <RequireAuth>
