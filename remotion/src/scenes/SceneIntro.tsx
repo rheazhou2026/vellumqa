@@ -4,16 +4,18 @@ export const SceneIntro: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const eyebrowOp = interpolate(frame, [0, 18], [0, 1], { extrapolateRight: "clamp" });
-  const eyebrowY = interpolate(frame, [0, 18], [12, 0], { extrapolateRight: "clamp" });
+  // All animations begin after the SceneWrap fade-in (which runs ~frames 10–20).
+  // Using only opacity + translateY (no clip-path) to avoid subpixel shimmer.
+  const eyebrowOp = interpolate(frame, [22, 36], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const eyebrowY = interpolate(frame, [22, 36], [12, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
-  const titleClip = interpolate(frame, [10, 50], [0, 100], { extrapolateRight: "clamp" });
-  const titleY = spring({ frame: frame - 10, fps, config: { damping: 20, stiffness: 90 } });
+  const titleOp = interpolate(frame, [30, 52], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const titleY = spring({ frame: frame - 30, fps, config: { damping: 22, stiffness: 95 } });
 
-  const subOp = interpolate(frame, [40, 70], [0, 1], { extrapolateRight: "clamp" });
-  const subY = interpolate(frame, [40, 70], [16, 0], { extrapolateRight: "clamp" });
+  const subOp = interpolate(frame, [60, 84], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const subY = interpolate(frame, [60, 84], [16, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
-  const lineWidth = interpolate(frame, [60, 100], [0, 280], { extrapolateRight: "clamp" });
+  const lineWidth = interpolate(frame, [70, 100], [0, 280], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
   return (
     <AbsoluteFill style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "0 160px" }}>
@@ -40,8 +42,8 @@ export const SceneIntro: React.FC = () => {
             fontWeight: 400,
             lineHeight: 1.05,
             letterSpacing: -2,
+            opacity: titleOp,
             transform: `translateY(${interpolate(titleY, [0, 1], [40, 0])}px)`,
-            clipPath: `inset(0 ${100 - titleClip}% 0 0)`,
           }}
         >
           Trust, but <em style={{ fontStyle: "italic", color: "#6366F1" }}>verify.</em>
