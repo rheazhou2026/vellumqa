@@ -8,7 +8,9 @@ import { SceneIngest } from "./scenes/SceneIngest";
 import { SceneAudit } from "./scenes/SceneAudit";
 import { SceneTrust } from "./scenes/SceneTrust";
 import { SceneReview } from "./scenes/SceneReview";
-import { SceneIntegrate } from "./scenes/SceneIntegrate";
+import { SceneProblem } from "./scenes/SceneProblem";
+import { SceneWhyNow } from "./scenes/SceneWhyNow";
+import { SceneOverrides } from "./scenes/SceneOverrides";
 import { SceneOutro } from "./scenes/SceneOutro";
 import { SceneWrap } from "./components/SceneWrap";
 
@@ -43,13 +45,15 @@ const Vignette: React.FC = () => (
 );
 
 const SCENES: { Component: React.FC; duration: number; leadIn?: number; leadOut?: number }[] = [
-  { Component: SceneIntro, duration: 130 },
-  { Component: SceneIngest, duration: 175 },
-  { Component: SceneAudit, duration: 180 },
+  { Component: SceneIntro, duration: 110 },
+  { Component: SceneProblem, duration: 180 },
+  { Component: SceneWhyNow, duration: 190 },
+  { Component: SceneIngest, duration: 165 },
+  { Component: SceneAudit, duration: 170 },
   { Component: SceneTrust, duration: 200 },
-  { Component: SceneReview, duration: 210 },
-  { Component: SceneIntegrate, duration: 160 },
-  { Component: SceneOutro, duration: 145 },
+  { Component: SceneOverrides, duration: 210 },
+  { Component: SceneReview, duration: 200 },
+  { Component: SceneOutro, duration: 130 },
 ];
 
 export const MainVideo: React.FC = () => {
