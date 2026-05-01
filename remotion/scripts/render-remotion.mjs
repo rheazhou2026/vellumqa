@@ -26,10 +26,9 @@ await renderMedia({
   composition,
   serveUrl: bundled,
   codec: "h264",
-  audioCodec: "aac",
   outputLocation: process.env.OUT || "/mnt/documents/vellum-demo.mp4",
   puppeteerInstance: browser,
-  muted: false,
+  muted: true,
   concurrency: 2,
 });
 
