@@ -12,6 +12,11 @@ type Kpi = { label: string; value: string; trend?: string; icon: React.Component
 
 export default function Dashboard() {
   const [stats, setStats] = useState({ encounters: 0, criticals: 0, evaluations: 0, guidelines: 0, criteria: 0 });
+  const [metrics, setMetrics] = useState<{ avgTrust: number | null; hallucinationRate: number | null; omissionRate: number | null }>({
+    avgTrust: null,
+    hallucinationRate: null,
+    omissionRate: null,
+  });
 
   useEffect(() => {
     (async () => {
@@ -29,15 +34,62 @@ export default function Dashboard() {
         guidelines: gl.count ?? 0,
         criteria: cr.count ?? 0,
       });
+
+      // Compute Avg Trust, Hallucination Rate, Omission Rate from recent runs
+      const { data: runs } = await supabase
+        .from("evaluation_runs")
+        .select("trust_score, source_faithfulness_index, omission_hazard_score, red_flag_findings, guideline_matches")
+        .order("completed_at", { ascending: false })
+        .limit(200);
+
+      if (runs && runs.length) {
+        const trustVals = runs.map((r: any) => Number(r.trust_score)).filter((n: number) => Number.isFinite(n));
+        const avgTrust = trustVals.length ? trustVals.reduce((a, b) => a + b, 0) / trustVals.length : null;
+
+        // Hallucination rate: avg of (1 - source_faithfulness_index/100), expressed as %
+        const sfiVals = runs.map((r: any) => Number(r.source_faithfulness_index)).filter((n: number) => Number.isFinite(n));
+        let hallucinationRate: number | null = null;
+        if (sfiVals.length) {
+          const avgSfi = sfiVals.reduce((a, b) => a + b, 0) / sfiVals.length;
+          hallucinationRate = Math.max(0, 100 - avgSfi);
+        } else {
+          // Fallback: % of runs with any contradicted guideline match
+          const withHallu = runs.filter((r: any) =>
+            (r.guideline_matches ?? []).some((g: any) => g.status === "contradicted")
+          ).length;
+          hallucinationRate = (withHallu / runs.length) * 100;
+        }
+
+        // Omission rate: prefer omission_hazard_score (higher = more omissions); else compute from red_flag_findings missed
+        const ohVals = runs.map((r: any) => Number(r.omission_hazard_score)).filter((n: number) => Number.isFinite(n));
+        let omissionRate: number | null = null;
+        if (ohVals.length) {
+          omissionRate = ohVals.reduce((a, b) => a + b, 0) / ohVals.length;
+        } else {
+          let missed = 0, total = 0;
+          for (const r of runs as any[]) {
+            const flags = r.red_flag_findings ?? [];
+            total += flags.length;
+            missed += flags.filter((f: any) => f.status === "missed").length;
+          }
+          omissionRate = total ? (missed / total) * 100 : null;
+        }
+
+        setMetrics({
+          avgTrust: avgTrust != null ? Math.round(avgTrust) : null,
+          hallucinationRate: hallucinationRate != null ? Math.round(hallucinationRate * 10) / 10 : null,
+          omissionRate: omissionRate != null ? Math.round(omissionRate * 10) / 10 : null,
+        });
+      }
     })();
   }, []);
 
   const kpis: Kpi[] = [
-    { label: "Avg Trust Score", value: "—", icon: Activity },
+    { label: "Avg Trust Score", value: metrics.avgTrust != null ? String(metrics.avgTrust) : "—", icon: Activity, tone: metrics.avgTrust != null && metrics.avgTrust >= 80 ? "pass" : metrics.avgTrust != null && metrics.avgTrust < 60 ? "critical" : "default" },
     { label: "Critical Flags", value: String(stats.criticals), icon: AlertOctagon, tone: "critical" },
     { label: "Evaluations Run", value: String(stats.evaluations), icon: FileCheck2 },
-    { label: "Hallucination Rate", value: "—", icon: AlertTriangle, tone: "high" },
-    { label: "Omission Rate", value: "—", icon: CircleSlash, tone: "moderate" },
+    { label: "Hallucination Rate", value: metrics.hallucinationRate != null ? `${metrics.hallucinationRate}%` : "—", icon: AlertTriangle, tone: "high" },
+    { label: "Omission Rate", value: metrics.omissionRate != null ? `${metrics.omissionRate}%` : "—", icon: CircleSlash, tone: "moderate" },
   ];
 
   return (
