@@ -162,11 +162,11 @@ export default function NewEncounterDialog({ onCreated }: { onCreated?: () => vo
           <Plus className="h-3.5 w-3.5 mr-1.5" /> New encounter
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl bg-surface border-border">
-        <DialogHeader>
+      <DialogContent className="max-w-3xl bg-surface border-border max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-2 shrink-0">
           <DialogTitle className="font-display text-2xl">Ingest encounter</DialogTitle>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 px-6 overflow-y-auto flex-1">
           <div>
             <Label className="text-xs uppercase tracking-wider text-muted-foreground">Specialty</Label>
             <Select value={specialty} onValueChange={setSpecialty}>
@@ -200,7 +200,7 @@ export default function NewEncounterDialog({ onCreated }: { onCreated?: () => vo
             <Textarea className="mt-1 font-mono text-xs min-h-[180px]" placeholder={PLACEHOLDER_NOTE} value={note} onChange={(e) => setNote(e.target.value)} />
           </div>
         </div>
-        <div className="flex justify-end gap-2 pt-2">
+        <div className="flex justify-end gap-2 px-6 py-4 border-t border-border shrink-0 bg-surface">
           <Button variant="ghost" onClick={() => setOpen(false)} disabled={busy}>Cancel</Button>
           <Button onClick={submit} disabled={busy || !note.trim() || !specialty} className="bg-accent text-accent-foreground hover:bg-accent-hover">
             {busy ? <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Ingesting…</> : "Ingest & evaluate"}
