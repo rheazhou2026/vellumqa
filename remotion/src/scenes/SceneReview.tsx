@@ -39,7 +39,7 @@ export const SceneReview: React.FC = () => {
     <AbsoluteFill style={{ display: "flex", flexDirection: "column", padding: "100px 160px", justifyContent: "center" }}>
       <div style={{ opacity: headerOp, marginBottom: 36 }}>
         <div style={{ fontFamily: "JetBrains Mono", fontSize: 14, color: "#6366F1", letterSpacing: 4, marginBottom: 12 }}>
-          STEP 04 / REVIEW
+          STEP 05 / REVIEW
         </div>
         <div style={{ fontFamily: "Playfair Display", fontSize: 72, color: "#F5F5F0", lineHeight: 1.1 }}>
           Every flag traces to evidence.
