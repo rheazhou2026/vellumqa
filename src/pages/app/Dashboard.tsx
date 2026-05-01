@@ -35,45 +35,29 @@ export default function Dashboard() {
         criteria: cr.count ?? 0,
       });
 
-      // Compute Avg Trust, Hallucination Rate, Omission Rate from recent runs
+      // Compute KPIs from last 30 days, excluding failed/empty runs (trust_score = 0)
+      const since = new Date();
+      since.setDate(since.getDate() - 30);
       const { data: runs } = await supabase
         .from("evaluation_runs")
-        .select("trust_score, source_faithfulness_index, omission_hazard_score, red_flag_findings, guideline_matches")
+        .select("trust_score, source_faithfulness_index, omission_hazard_score")
+        .gte("completed_at", since.toISOString())
+        .gt("trust_score", 0)
         .order("completed_at", { ascending: false })
-        .limit(200);
+        .limit(500);
 
       if (runs && runs.length) {
-        const trustVals = runs.map((r: any) => Number(r.trust_score)).filter((n: number) => Number.isFinite(n));
-        const avgTrust = trustVals.length ? trustVals.reduce((a, b) => a + b, 0) / trustVals.length : null;
+        const avg = (vals: number[]) => vals.reduce((a, b) => a + b, 0) / vals.length;
 
-        // Hallucination rate: avg of (1 - source_faithfulness_index/100), expressed as %
-        const sfiVals = runs.map((r: any) => Number(r.source_faithfulness_index)).filter((n: number) => Number.isFinite(n));
-        let hallucinationRate: number | null = null;
-        if (sfiVals.length) {
-          const avgSfi = sfiVals.reduce((a, b) => a + b, 0) / sfiVals.length;
-          hallucinationRate = Math.max(0, 100 - avgSfi);
-        } else {
-          // Fallback: % of runs with any contradicted guideline match
-          const withHallu = runs.filter((r: any) =>
-            (r.guideline_matches ?? []).some((g: any) => g.status === "contradicted")
-          ).length;
-          hallucinationRate = (withHallu / runs.length) * 100;
-        }
+        const trustVals = runs.map((r: any) => Number(r.trust_score)).filter(Number.isFinite);
+        const sfiVals = runs.map((r: any) => Number(r.source_faithfulness_index)).filter(Number.isFinite);
+        const ohVals = runs.map((r: any) => Number(r.omission_hazard_score)).filter(Number.isFinite);
 
-        // Omission rate: prefer omission_hazard_score (higher = more omissions); else compute from red_flag_findings missed
-        const ohVals = runs.map((r: any) => Number(r.omission_hazard_score)).filter((n: number) => Number.isFinite(n));
-        let omissionRate: number | null = null;
-        if (ohVals.length) {
-          omissionRate = ohVals.reduce((a, b) => a + b, 0) / ohVals.length;
-        } else {
-          let missed = 0, total = 0;
-          for (const r of runs as any[]) {
-            const flags = r.red_flag_findings ?? [];
-            total += flags.length;
-            missed += flags.filter((f: any) => f.status === "missed").length;
-          }
-          omissionRate = total ? (missed / total) * 100 : null;
-        }
+        const avgTrust = trustVals.length ? avg(trustVals) : null;
+        // Hallucination = inverse of source faithfulness; only count runs that actually had SFI
+        const hallucinationRate = sfiVals.length ? Math.max(0, 100 - avg(sfiVals)) : null;
+        // Omission hazard already 0-100
+        const omissionRate = ohVals.length ? avg(ohVals) : null;
 
         setMetrics({
           avgTrust: avgTrust != null ? Math.round(avgTrust) : null,
