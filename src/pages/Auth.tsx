@@ -171,15 +171,24 @@ export default function Auth() {
               </p>
             )}
 
-            <button type="button" onClick={() => setMode(mode === "signin" ? "signup" : "signin")} className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition pt-2">
-              {mode === "signin" ? "Create an account" : "Already have an account? Sign in"}
+            <button
+              type="button"
+              onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+              className="w-full text-center text-sm font-heading uppercase tracking-wider text-foreground hover:text-accent transition pt-3 border-t border-border mt-2"
+            >
+              {mode === "signin" ? (
+                <>New here? <span className="text-accent underline underline-offset-4">Create an account</span></>
+              ) : (
+                <>Already have an account? <span className="text-accent underline underline-offset-4">Sign in</span></>
+              )}
             </button>
 
-            <div className="pt-4 text-center">
-              <Link to="/faq" className="text-[11px] font-heading uppercase tracking-[0.18em] text-tertiary hover:text-accent transition">
-                Watch demo & FAQ →
-              </Link>
-            </div>
+            <Link
+              to="/faq"
+              className="mt-3 flex items-center justify-center gap-2 w-full h-11 rounded-sm border border-accent/40 bg-accent/5 text-accent hover:bg-accent/10 hover:border-accent transition font-heading uppercase tracking-wider text-xs"
+            >
+              ▶ Watch demo & FAQ
+            </Link>
           </form>
         </div>
       </div>
