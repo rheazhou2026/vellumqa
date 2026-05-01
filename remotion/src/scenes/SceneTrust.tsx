@@ -96,7 +96,7 @@ export const SceneTrust: React.FC = () => {
       <div style={{ flex: 1, maxWidth: 600 }}>
         <div style={{ opacity: headerOp, marginBottom: 32 }}>
           <div style={{ fontFamily: "JetBrains Mono", fontSize: 14, color: "#6366F1", letterSpacing: 4, marginBottom: 12 }}>
-            STEP 03 / SCORE
+            STEP 04 / SCORE
           </div>
           <div style={{ fontFamily: "Playfair Display", fontSize: 56, color: "#F5F5F0", lineHeight: 1.1 }}>
             Specialty-aware risk.
