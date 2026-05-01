@@ -59,13 +59,27 @@ export default function Auth() {
   }
 
   async function google() {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      toast.error(result.error instanceof Error ? result.error.message : "Google sign-in failed");
+    setLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: `${window.location.origin}/dashboard`,
+      });
+      if (result.error) {
+        toast.error(result.error instanceof Error ? result.error.message : "Google sign-in failed");
+        setLoading(false);
+        return;
+      }
+      if (result.redirected) {
+        // browser is navigating to Google — leave loading state on
+        return;
+      }
+      // Tokens were returned and session is set. Route immediately;
+      // onAuthStateChange will also fire, but we don't want to wait for it.
+      navigate("/dashboard", { replace: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Google sign-in failed");
+      setLoading(false);
     }
-    // If redirected, the browser will navigate. Otherwise the session is set and onAuthStateChange routes us.
   }
 
   return (
@@ -109,10 +123,10 @@ export default function Auth() {
             <h1 className="font-display text-4xl">Vellum</h1>
           </div>
           <div className="font-heading text-xs uppercase tracking-[0.2em] text-muted-foreground mb-2">
-            {mode === "signin" ? "Reviewer Sign In" : "Request Reviewer Access"}
+            {mode === "signin" ? "Reviewer Sign In" : "Create Reviewer Account"}
           </div>
           <h2 className="font-display text-3xl mb-8">
-            {mode === "signin" ? "Continue to console" : "Create account"}
+            {mode === "signin" ? "Continue to console" : "Create your account"}
           </h2>
 
           <form onSubmit={submit} className="space-y-4">
@@ -132,17 +146,24 @@ export default function Auth() {
             </div>
 
             <Button type="submit" disabled={loading} className="w-full bg-accent hover:bg-accent-hover text-accent-foreground font-heading uppercase tracking-wider text-xs h-10 rounded-sm">
-              {loading ? "…" : mode === "signin" ? "Continue" : "Request access"}
+              {loading ? "…" : mode === "signin" ? "Continue" : "Create account"}
             </Button>
 
-            <div className="relative py-2">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
-              <div className="relative flex justify-center"><span className="bg-background px-3 font-mono text-[10px] uppercase tracking-widest text-tertiary">or</span></div>
-            </div>
+            {mode === "signin" && (
+              <>
+                <div className="relative py-2">
+                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
+                  <div className="relative flex justify-center"><span className="bg-background px-3 font-mono text-[10px] uppercase tracking-widest text-tertiary">or</span></div>
+                </div>
 
-            <Button type="button" variant="outline" onClick={google} className="w-full border-border bg-surface hover:bg-surface-muted h-10 rounded-sm font-heading uppercase tracking-wider text-xs">
-              Continue with Google
-            </Button>
+                <Button type="button" variant="outline" onClick={google} disabled={loading} className="w-full border-border bg-surface hover:bg-surface-muted h-10 rounded-sm font-heading uppercase tracking-wider text-xs">
+                  Continue with Google
+                </Button>
+                <p className="text-[11px] text-muted-foreground leading-relaxed text-center">
+                  No Google account on file? We'll create one automatically.
+                </p>
+              </>
+            )}
 
             {mode === "signup" && (
               <p className="text-[11px] text-muted-foreground leading-relaxed">
@@ -151,7 +172,7 @@ export default function Auth() {
             )}
 
             <button type="button" onClick={() => setMode(mode === "signin" ? "signup" : "signin")} className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition pt-2">
-              {mode === "signin" ? "Need access? Request an account" : "Already have an account? Sign in"}
+              {mode === "signin" ? "Create an account" : "Already have an account? Sign in"}
             </button>
           </form>
         </div>
