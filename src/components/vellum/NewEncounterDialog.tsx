@@ -15,9 +15,22 @@ const SPECIALTIES = [
   "psychiatry", "oncology", "surgery", "critical_care",
 ];
 
-const SAMPLE_NOTE = `CHIEF COMPLAINT: Chest pain x 2 hrs.\nHPI: 58yo M with HTN reports substernal pressure, radiating to left arm, diaphoretic. No prior MI.\nROS: Negative for fever.\nEXAM: BP 158/94, HR 102, SpO2 96%. Lungs clear. Cardiac RRR.\nASSESSMENT: Atypical chest pain, likely musculoskeletal.\nPLAN: Discharge with ibuprofen. Follow up in 1 week.`;
+const PLACEHOLDER_NOTE = `CHIEF COMPLAINT: Chest pain x 2 hrs.
+HPI: 58yo M with HTN reports substernal pressure, radiating to left arm, diaphoretic. No prior MI.
+ROS: Negative for fever.
+EXAM: BP 158/94, HR 102, SpO2 96%. Lungs clear. Cardiac RRR.
+ASSESSMENT: Atypical chest pain, likely musculoskeletal.
+PLAN: Discharge with ibuprofen. Follow up in 1 week.`;
 
-const SAMPLE_SOURCE = `[transcript]\nClinician: When did the pain start?\nPatient: About two hours ago, like a heavy weight on my chest. It went down my left arm.\nClinician: Any sweating?\nPatient: Yes, a lot.\nClinician: Any history of heart problems?\nPatient: My father had a heart attack at 55. I take lisinopril for blood pressure.\n\n[ehr]\nVitals: BP 158/94, HR 102, SpO2 96%, T 98.6. EKG pending. Troponin pending.`;
+const PLACEHOLDER_SOURCE = `[transcript]
+Clinician: When did the pain start?
+Patient: About two hours ago, like a heavy weight on my chest...
+
+[ehr]
+Vitals: BP 158/94, HR 102, SpO2 96%. EKG pending. Troponin pending.
+
+[labs]
+Troponin I: 0.04 ng/mL`;
 
 type SourceType = "transcript" | "ehr" | "labs";
 const TAG_TO_TYPE: Record<string, SourceType> = {
@@ -64,12 +77,12 @@ function parseSourceSections(raw: string): { type: SourceType; text: string }[] 
 export default function NewEncounterDialog({ onCreated }: { onCreated?: () => void }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [specialty, setSpecialty] = useState("emergency_medicine");
-  const [chief, setChief] = useState("Chest pain");
-  const [visit, setVisit] = useState("ED visit");
-  const [vendor, setVendor] = useState("OpenEvidence v3.2");
-  const [note, setNote] = useState(SAMPLE_NOTE);
-  const [source, setSource] = useState(SAMPLE_SOURCE);
+  const [specialty, setSpecialty] = useState<string>("");
+  const [chief, setChief] = useState("");
+  const [visit, setVisit] = useState("");
+  const [vendor, setVendor] = useState("");
+  const [note, setNote] = useState("");
+  const [source, setSource] = useState("");
   const navigate = useNavigate();
 
   async function submit() {
@@ -77,6 +90,7 @@ export default function NewEncounterDialog({ onCreated }: { onCreated?: () => vo
     try {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("Not signed in");
+      if (!specialty) throw new Error("Please choose a specialty");
 
       const { data: enc, error: encErr } = await supabase
         .from("encounters")
@@ -156,7 +170,7 @@ export default function NewEncounterDialog({ onCreated }: { onCreated?: () => vo
           <div>
             <Label className="text-xs uppercase tracking-wider text-muted-foreground">Specialty</Label>
             <Select value={specialty} onValueChange={setSpecialty}>
-              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="mt-1"><SelectValue placeholder="Select a specialty…" /></SelectTrigger>
               <SelectContent>
                 {SPECIALTIES.map((s) => <SelectItem key={s} value={s}>{s.replace(/_/g, " ")}</SelectItem>)}
               </SelectContent>
@@ -164,31 +178,31 @@ export default function NewEncounterDialog({ onCreated }: { onCreated?: () => vo
           </div>
           <div>
             <Label className="text-xs uppercase tracking-wider text-muted-foreground">Visit type</Label>
-            <Input className="mt-1" value={visit} onChange={(e) => setVisit(e.target.value)} />
+            <Input className="mt-1" placeholder="e.g. ED visit" value={visit} onChange={(e) => setVisit(e.target.value)} />
           </div>
           <div>
             <Label className="text-xs uppercase tracking-wider text-muted-foreground">Chief complaint</Label>
-            <Input className="mt-1" value={chief} onChange={(e) => setChief(e.target.value)} />
+            <Input className="mt-1" placeholder="e.g. Chest pain" value={chief} onChange={(e) => setChief(e.target.value)} />
           </div>
           <div>
             <Label className="text-xs uppercase tracking-wider text-muted-foreground">AI vendor / model</Label>
-            <Input className="mt-1" value={vendor} onChange={(e) => setVendor(e.target.value)} />
+            <Input className="mt-1" placeholder="e.g. OpenEvidence v3.2" value={vendor} onChange={(e) => setVendor(e.target.value)} />
           </div>
           <div className="col-span-2">
             <Label className="text-xs uppercase tracking-wider text-muted-foreground">Source evidence</Label>
-            <Textarea className="mt-1 font-mono text-xs min-h-[140px]" value={source} onChange={(e) => setSource(e.target.value)} />
+            <Textarea className="mt-1 font-mono text-xs min-h-[140px]" placeholder={PLACEHOLDER_SOURCE} value={source} onChange={(e) => setSource(e.target.value)} />
             <p className="text-[10px] text-muted-foreground mt-1">
               Use <code>[transcript]</code>, <code>[ehr]</code>, <code>[labs]</code> tags to separate sections. Untagged text is treated as transcript.
             </p>
           </div>
           <div className="col-span-2">
             <Label className="text-xs uppercase tracking-wider text-muted-foreground">AI-generated note</Label>
-            <Textarea className="mt-1 font-mono text-xs min-h-[180px]" value={note} onChange={(e) => setNote(e.target.value)} />
+            <Textarea className="mt-1 font-mono text-xs min-h-[180px]" placeholder={PLACEHOLDER_NOTE} value={note} onChange={(e) => setNote(e.target.value)} />
           </div>
         </div>
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="ghost" onClick={() => setOpen(false)} disabled={busy}>Cancel</Button>
-          <Button onClick={submit} disabled={busy || !note.trim()} className="bg-accent text-accent-foreground hover:bg-accent-hover">
+          <Button onClick={submit} disabled={busy || !note.trim() || !specialty} className="bg-accent text-accent-foreground hover:bg-accent-hover">
             {busy ? <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Ingesting…</> : "Ingest & evaluate"}
           </Button>
         </div>
