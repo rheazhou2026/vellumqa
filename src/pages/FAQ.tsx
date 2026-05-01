@@ -80,7 +80,7 @@ export default function FAQ() {
             See Vellum in motion.
           </h1>
           <p className="mt-4 text-base text-muted-foreground max-w-2xl leading-relaxed">
-            A 25-second walkthrough of how Vellum ingests an encounter, audits the AI output, and routes risk to a human reviewer. followed by answers to the questions clinicians ask most.
+            A short walkthrough of how Vellum ingests an encounter, audits the AI output, and routes risk to a human reviewer, followed by answers to the questions clinicians ask most.
           </p>
         </div>
 
