@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button";
 const faqs = [
   {
     q: "What is Vellum?",
-    a: "Vellum is independent clinical AI trust infrastructure. It evaluates AI-generated clinical documentation (scribe notes, summaries, coding suggestions) against the original transcript and EHR evidence — flagging hallucinations, omissions, and unsafe recommendations before they reach a chart.",
+    a: "Vellum is independent clinical AI trust infrastructure. It evaluates AI-generated clinical documentation (scribe notes, summaries, coding suggestions) against the original transcript and EHR evidence. flagging hallucinations, omissions, and unsafe recommendations before they reach a chart.",
   },
   {
     q: "How does the trust score work?",
-    a: "Each encounter receives sub-scores for fidelity, completeness, safety, and coding integrity. These roll up into a weighted trust score (0–100). Scoring is calibrated by specialty acuity — a missed allergy in cardiology is weighted differently than a typo in a routine derm visit.",
+    a: "Each encounter receives sub-scores for fidelity, completeness, safety, and coding integrity. These roll up into a weighted trust score (0–100). Scoring is calibrated by specialty acuity. a missed allergy in cardiology is weighted differently than a typo in a routine derm visit.",
   },
   {
     q: "What triggers a critical failure?",
@@ -22,11 +22,11 @@ const faqs = [
   },
   {
     q: "Who reviews flagged encounters?",
-    a: "Your team's designated clinical reviewers. Vellum routes flagged encounters into a queue with the evidence pre-attached — reviewers see the AI claim, the source span, and the suggested adjudication. Every override is logged.",
+    a: "Your team's designated clinical reviewers. Vellum routes flagged encounters into a queue with the evidence pre-attached. reviewers see the AI claim, the source span, and the suggested adjudication. Every override is logged.",
   },
   {
     q: "How do I ingest an encounter?",
-    a: "From the Encounters page, click 'New Encounter,' paste or upload the transcript and EHR context, set patient and specialty metadata, then run the audit. Results post to the encounter ledger when complete — typically in under a minute.",
+    a: "From the Encounters page, click 'New Encounter,' paste or upload the transcript and EHR context, set patient and specialty metadata, then run the audit. Results post to the encounter ledger when complete. typically in under a minute.",
   },
   {
     q: "Does Vellum integrate with my EHR or scribe vendor?",
@@ -34,11 +34,11 @@ const faqs = [
   },
   {
     q: "What audit trail do regulators see?",
-    a: "Every evaluation produces an immutable record: model version, evidence spans cited, scores assigned, reviewers assigned, and any overrides — all timestamped and exportable for 21 CFR Part 11 / HIPAA audit requests.",
+    a: "Every evaluation produces an immutable record: model version, evidence spans cited, scores assigned, reviewers assigned, and any overrides. all timestamped and exportable for 21 CFR Part 11 / HIPAA audit requests.",
   },
   {
     q: "How fast does an audit run?",
-    a: "Most encounters complete in 20–60 seconds depending on transcript length and the number of agents engaged. Results stream into the encounter ledger as each agent finishes — you don't have to wait for the full pipeline to start reviewing.",
+    a: "Most encounters complete in 20–60 seconds depending on transcript length and the number of agents engaged. Results stream into the encounter ledger as each agent finishes. you don't have to wait for the full pipeline to start reviewing.",
   },
   {
     q: "Can I get team access?",
@@ -80,7 +80,7 @@ export default function FAQ() {
             See Vellum in motion.
           </h1>
           <p className="mt-4 text-base text-muted-foreground max-w-2xl leading-relaxed">
-            A 25-second walkthrough of how Vellum ingests an encounter, audits the AI output, and routes risk to a human reviewer — followed by answers to the questions clinicians ask most.
+            A 25-second walkthrough of how Vellum ingests an encounter, audits the AI output, and routes risk to a human reviewer. followed by answers to the questions clinicians ask most.
           </p>
         </div>
 
