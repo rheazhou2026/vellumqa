@@ -40,51 +40,60 @@ export default function EncounterDetail() {
 
   async function load() {
     if (!id) return;
-    const [{ data: enc }, { data: src }, { data: art }, { data: cm }] = await Promise.all([
+    // Phase 1: fetch everything that doesn't depend on the run.
+    const [{ data: enc }, { data: src }, { data: art }, { data: cm }, { data: r }] = await Promise.all([
       supabase.from("encounters").select("*").eq("id", id).maybeSingle(),
       supabase.from("encounter_sources").select("*").eq("encounter_id", id),
       supabase.from("note_artifacts").select("*").eq("encounter_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
       supabase.from("rubric_criteria").select("criterion_id, name, severity_level, domain_id"),
+      supabase.from("evaluation_runs").select("*").eq("encounter_id", id).order("completed_at", { ascending: false }).limit(1).maybeSingle(),
     ]);
+
+    // Phase 2: fetch run-dependent + artifact-dependent data in parallel.
+    const [crRes, manRes, claimsRes] = await Promise.all([
+      r ? supabase.from("criterion_results").select("*").eq("evaluation_run_id", r.id) : Promise.resolve({ data: [] as any[] }),
+      r?.manifest_id
+        ? supabase.from("rubric_load_manifests").select("*").eq("id", r.manifest_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      art ? supabase.from("clinical_claims").select("*").eq("artifact_id", art.id) : Promise.resolve({ data: [] as any[] }),
+    ]);
+
+    // Atomic apply — React 18 batches these into a single render so the
+    // sub-scores, trust score, and criterion findings all appear together.
     setEncounter(enc);
     setSources(src ?? []);
     setArtifact(art ?? null);
     setCriteriaMap(new Map((cm ?? []).map((c: any) => [c.criterion_id, c])));
-
-    const { data: r } = await supabase.from("evaluation_runs").select("*").eq("encounter_id", id).order("completed_at", { ascending: false }).limit(1).maybeSingle();
     setRun(r ?? null);
-
-    if (art) {
-      const { data: c } = await supabase.from("clinical_claims").select("*").eq("artifact_id", art.id);
-      setClaims(c ?? []);
-    }
-    if (r) {
-      const { data: cr } = await supabase.from("criterion_results").select("*").eq("evaluation_run_id", r.id);
-      setResults(cr ?? []);
-      if (r.manifest_id) {
-        const { data: m } = await supabase
-          .from("rubric_load_manifests")
-          .select("*")
-          .eq("id", r.manifest_id)
-          .maybeSingle();
-        setManifest(m ?? null);
-      } else {
-        setManifest(null);
-      }
-    }
+    setResults((crRes as any).data ?? []);
+    setManifest((manRes as any).data ?? null);
+    setClaims((claimsRes as any).data ?? []);
   }
 
   useEffect(() => { load(); }, [id]);
 
   useEffect(() => {
     if (!id) return;
+    // Debounce: a single audit run produces a burst of inserts (one
+    // evaluation_run + N criterion_results + M clinical_claims). Without
+    // coalescing, each event triggers a fresh load() and we render
+    // half-loaded states (blank sub-scores, then filled, then score
+    // shifts). Wait for the burst to settle, then load once.
+    let t: ReturnType<typeof setTimeout> | null = null;
+    const schedule = () => {
+      if (t) clearTimeout(t);
+      t = setTimeout(() => { t = null; load(); }, 350);
+    };
     const ch = supabase
       .channel(`enc-${id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "evaluation_runs" }, load)
-      .on("postgres_changes", { event: "*", schema: "public", table: "criterion_results" }, load)
-      .on("postgres_changes", { event: "*", schema: "public", table: "clinical_claims" }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "evaluation_runs" }, schedule)
+      .on("postgres_changes", { event: "*", schema: "public", table: "criterion_results" }, schedule)
+      .on("postgres_changes", { event: "*", schema: "public", table: "clinical_claims" }, schedule)
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      if (t) clearTimeout(t);
+      supabase.removeChannel(ch);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
