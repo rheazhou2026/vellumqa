@@ -1,7 +1,5 @@
 # Welcome to Vellum
 
-# Vellum
-
 > AI-powered evaluation infrastructure for clinical documentation and healthcare AI systems.
 
 Vellum is a healthcare AI audit and quality assurance platform designed to evaluate AI-generated clinical notes against structured medical and regulatory rubrics.
