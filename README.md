@@ -1,6 +1,5 @@
 # Welcome to Vellum
 
-TODO: Document your project here
 # Vellum
 
 > AI-powered evaluation infrastructure for clinical documentation and healthcare AI systems.
