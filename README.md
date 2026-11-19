@@ -176,14 +176,6 @@ Useful future evaluation measures include claim-level precision/recall against a
 - **Privacy/security require deployment-specific verification.** PHI retention options and HIPAA-conscious architecture are design goals, not a representation of a signed BAA, security audit, or regulatory certification.
 - **Demo/benchmark flows may use synthetic or test data.** Do not assume that examples are validated against real clinical outcomes.
 
-## Research and presentation materials
-
-- [Vellum — Mayo Clinic presentation (June 23, 2026)](https://docs.google.com/presentation/d/1BW-sfBpd7n_6tjgH975ctwAYTujtoZ4ozgCgleP1AX8/edit)
-- [Vellum — MD Anderson presentation (June 16, 2026)](https://docs.google.com/presentation/d/1BA3xLwindAHOuEsgqW1_u_y7w-uutjs8iCxszx9vw9Q/edit)
-- [Vellum — Duke research collaboration presentation (June 19, 2026)](https://docs.google.com/presentation/d/194p3XWvPkSB1uvSiZF6LIUmapWuogmH-om_wtaI35bY/edit)
-
-The decks communicate the product thesis, proposed technical architecture, and collaboration concept. External clinical-study figures or market numbers within those decks should be independently rechecked before being quoted as established facts.
-
 ## Founder
 
 **Rhea Zhou** · Jerome Fisher Program in Management & Technology (M&T), University of Pennsylvania, Class of 2030.
